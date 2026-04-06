@@ -5,30 +5,30 @@ import (
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
-type Game struct {
+type GameScreen struct {
 	moving bool
 	pos    rl.Vector2
 }
 
-func (g *Game) init() {
-	g.moving = false
-	g.pos = rl.Vector2{X: 200, Y: 50}
-}
-
-func (g *Game) close() {}
-
-func (g *Game) update(delta float32) {
-	if g.moving {
-		g.pos.X += 100.0 * delta
+func NewGameScreen() *GameScreen {
+	return &GameScreen{
+		moving: false,
+		pos:    rl.Vector2{X: 200, Y: 50},
 	}
 }
 
-func (g *Game) draw() {
-	rl.ClearBackground(rl.DarkGray)
+func (g *GameScreen) Update(gm *GameManager) {
+	if g.moving {
+		g.pos.X += 100.0 * gm.DeltaTime
+	}
+}
+
+func (g *GameScreen) Draw(gm *GameManager) {
+	rl.ClearBackground(rl.DarkBlue)
 	rl.DrawRectangleV(g.pos, rl.Vector2{X: 50, Y: 50}, rl.Red)
 }
 
-func (g *Game) gui() {
+func (g *GameScreen) DrawUI(gm *GameManager) {
 	var buttonText string
 	if g.moving {
 		buttonText = "Stop moving"

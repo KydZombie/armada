@@ -1,40 +1,37 @@
 package main
 
 import (
-	"time"
-
 	"github.com/gen2brain/raylib-go/raylib"
 )
 
-func initWindow() {
-	//rl.SetConfigFlags(rl.FlagVsyncHint)
-	rl.InitWindow(800, 450, "Armada")
+func initWindow(config Config) {
+	if config.VSync {
+		rl.SetConfigFlags(rl.FlagVsyncHint)
+	}
+
+	rl.InitWindow(config.ScreenWidth, config.ScreenHeight, "Armada")
 	rl.SetTargetFPS(int32(rl.GetMonitorRefreshRate(rl.GetCurrentMonitor())))
 }
 
 func main() {
-	initWindow()
+	config := Config{
+		ScreenWidth:  1280,
+		ScreenHeight: 720,
+		VSync:        false,
+
+		Debug: true,
+	}
+	initWindow(config)
 	defer rl.CloseWindow()
 
-	game := Game{}
-	game.init()
-	defer game.close()
-
-	lastTime := time.Now().UnixMilli()
+	gameManager := NewGameManager(config, &MainMenuScreen{})
 
 	for !rl.WindowShouldClose() {
-		currentTime := time.Now().UnixMilli()
-		delta := float32(currentTime-lastTime) / 1000.0
-		lastTime = currentTime
+		gameManager.runLoop()
 
-		game.update(delta)
-
-		rl.BeginDrawing()
-		game.draw()
-		game.gui()
-		rl.DrawFPS(0, 0)
-
-		rl.EndDrawing()
+		if gameManager.shouldQuit {
+			break
+		}
 	}
 
 }
