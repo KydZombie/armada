@@ -1,4 +1,4 @@
-package main
+package core
 
 import (
 	"fmt"
@@ -18,7 +18,7 @@ type GameManager struct {
 	Screen    Screen
 	DeltaTime float32
 
-	shouldQuit bool
+	ShouldQuit bool
 }
 
 func NewGameManager(config Config, startScreen Screen) *GameManager {
@@ -34,14 +34,14 @@ func NewGameManager(config Config, startScreen Screen) *GameManager {
 }
 
 func (gm *GameManager) Quit() {
-	gm.shouldQuit = true
+	gm.ShouldQuit = true
 }
 
 func (gm *GameManager) SetScreen(screen Screen) {
 	gm.Screen = screen
 }
 
-func (gm *GameManager) runLoop() {
+func (gm *GameManager) RunFrame() {
 	gm.DeltaTime = rl.GetFrameTime()
 
 	if rl.IsKeyPressed(rl.KeyF3) {

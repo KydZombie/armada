@@ -1,10 +1,12 @@
-package main
+package game
 
 import (
+	"github.com/KydZombie/armada/core"
 	rg "github.com/gen2brain/raylib-go/raygui"
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
+//goland:noinspection GoNameStartsWithPackageName
 type GameScreen struct {
 	moving bool
 	pos    rl.Vector2
@@ -17,18 +19,18 @@ func NewGameScreen() *GameScreen {
 	}
 }
 
-func (g *GameScreen) Update(gm *GameManager) {
+func (g *GameScreen) Update(gm *core.GameManager) {
 	if g.moving {
 		g.pos.X += 100.0 * gm.DeltaTime
 	}
 }
 
-func (g *GameScreen) Draw(gm *GameManager) {
+func (g *GameScreen) Draw(gm *core.GameManager) {
 	rl.ClearBackground(rl.DarkBlue)
 	rl.DrawRectangleV(g.pos, rl.Vector2{X: 50, Y: 50}, rl.Red)
 }
 
-func (g *GameScreen) DrawUI(gm *GameManager) {
+func (g *GameScreen) DrawUI(gm *core.GameManager) {
 	var buttonText string
 	if g.moving {
 		buttonText = "Stop moving"

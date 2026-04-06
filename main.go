@@ -1,10 +1,12 @@
 package main
 
 import (
+	"github.com/KydZombie/armada/core"
+	"github.com/KydZombie/armada/game"
 	"github.com/gen2brain/raylib-go/raylib"
 )
 
-func initWindow(config Config) {
+func initWindow(config core.Config) {
 	if config.VSync {
 		rl.SetConfigFlags(rl.FlagVsyncHint)
 	}
@@ -14,7 +16,7 @@ func initWindow(config Config) {
 }
 
 func main() {
-	config := Config{
+	config := core.Config{
 		ScreenWidth:  1280,
 		ScreenHeight: 720,
 		VSync:        false,
@@ -24,12 +26,12 @@ func main() {
 	initWindow(config)
 	defer rl.CloseWindow()
 
-	gameManager := NewGameManager(config, &MainMenuScreen{})
+	gameManager := core.NewGameManager(config, &game.MainMenuScreen{})
 
 	for !rl.WindowShouldClose() {
-		gameManager.runLoop()
+		gameManager.RunFrame()
 
-		if gameManager.shouldQuit {
+		if gameManager.ShouldQuit {
 			break
 		}
 	}
