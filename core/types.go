@@ -1,7 +1,7 @@
 package core
 
 type Screen interface {
-	Update(gm *GameManager)
-	Draw(gm *GameManager)
-	DrawUI(gm *GameManager)
+	UpdateScreen(gm *GameManager)
+	DrawScreen(gm *GameManager)
+	DrawScreenUI(gm *GameManager)
 }

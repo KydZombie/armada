@@ -48,13 +48,13 @@ func (gm *GameManager) RunFrame() {
 		gm.Debug = !gm.Debug
 	}
 
-	gm.Screen.Update(gm)
+	gm.Screen.UpdateScreen(gm)
 
 	rl.BeginDrawing()
 	defer rl.EndDrawing()
 
-	gm.Screen.Draw(gm)
-	gm.Screen.DrawUI(gm)
+	gm.Screen.DrawScreen(gm)
+	gm.Screen.DrawScreenUI(gm)
 	if gm.Debug {
 		dtText := fmt.Sprintf("FrameTime: %.4f", gm.DeltaTime)
 		rl.DrawRectangle(0, 0, 190, 40, rl.Black)
