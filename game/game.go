@@ -20,13 +20,15 @@ func NewGameScreen(gm *core.GameManager) *Game {
 		windows: []core.Window[Game]{},
 	}
 
+	const windowMargin = 16.0
+
 	gs.windows = append(gs.windows, NewTerminalWindow(
 		func(gm *core.GameManager) rl.Rectangle {
 			return rl.Rectangle{
-				X:      float32(gm.ScreenWidth) / 2.0,
-				Y:      float32(gm.ScreenHeight) / 2.0,
-				Width:  float32(gm.ScreenWidth) / 2.0,
-				Height: float32(gm.ScreenHeight) / 2.0,
+				X:      float32(gm.ScreenWidth)/2.0 + windowMargin,
+				Y:      float32(gm.ScreenHeight)/2.0 + windowMargin,
+				Width:  float32(gm.ScreenWidth)/2.0 - windowMargin*2,
+				Height: float32(gm.ScreenHeight)/2.0 - windowMargin,
 			}
 		},
 		gm,
@@ -36,10 +38,10 @@ func NewGameScreen(gm *core.GameManager) *Game {
 	gs.windows = append(gs.windows, NewTrainWindow(
 		func(gm *core.GameManager) rl.Rectangle {
 			return rl.Rectangle{
-				X:      32.0,
-				Y:      32.0,
-				Width:  float32(gm.ScreenWidth)/2.0 - 32.0,
-				Height: float32(gm.ScreenHeight) - 64.0,
+				X:      windowMargin,
+				Y:      windowMargin,
+				Width:  float32(gm.ScreenWidth)/2.0 - windowMargin,
+				Height: float32(gm.ScreenHeight) - windowMargin*2,
 			}
 		},
 		gm,
