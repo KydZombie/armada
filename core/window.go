@@ -6,7 +6,7 @@ type Window[State any] interface {
 	IsVisible() bool
 	SetVisible(visible bool)
 
-	ResizeWindow(gm *GameManager)
+	UpdateWindowSize(gm *GameManager)
 
 	// HandleInput returns true if the input was captured
 	HandleInput(gm *GameManager, state *State) bool
@@ -26,12 +26,12 @@ func NewBaseWindow[State any](sizeFunc func(gm *GameManager) rl.Rectangle, gm *G
 		sizeFunc: sizeFunc,
 		visible:  visible,
 	}
-	window.ResizeWindow(gm)
+	window.UpdateWindowSize(gm)
 
 	return window
 }
 
-func (w *BaseWindow[State]) ResizeWindow(gm *GameManager) {
+func (w *BaseWindow[State]) UpdateWindowSize(gm *GameManager) {
 	w.bounds = w.sizeFunc(gm)
 }
 

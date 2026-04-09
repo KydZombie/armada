@@ -22,7 +22,7 @@ func NewGameScreen(gm *core.GameManager) *Game {
 
 	const windowMargin = 16.0
 
-	gs.windows = append(gs.windows, NewTerminalWindow(
+	terminal := NewTerminalWindow(
 		func(gm *core.GameManager) rl.Rectangle {
 			return rl.Rectangle{
 				X:      float32(gm.ScreenWidth)/2.0 + windowMargin,
@@ -33,7 +33,9 @@ func NewGameScreen(gm *core.GameManager) *Game {
 		},
 		gm,
 		initializeCommands(),
-	))
+	)
+
+	gs.windows = append(gs.windows, terminal)
 
 	gs.windows = append(gs.windows, NewTrainWindow(
 		func(gm *core.GameManager) rl.Rectangle {
@@ -45,16 +47,35 @@ func NewGameScreen(gm *core.GameManager) *Game {
 			}
 		},
 		gm,
-		train,
+	))
+
+	gs.windows = append(gs.windows, NewBattleWindow(
+		func(gm *core.GameManager) rl.Rectangle {
+			if terminal.IsVisible() {
+				return rl.Rectangle{
+					X:      float32(gm.ScreenWidth)/2.0 + windowMargin,
+					Y:      windowMargin,
+					Width:  float32(gm.ScreenWidth)/2.0 - windowMargin*2,
+					Height: float32(gm.ScreenHeight)/2.0 - windowMargin,
+				}
+			} else {
+				return rl.Rectangle{
+					X:      float32(gm.ScreenWidth)/2.0 + windowMargin,
+					Y:      windowMargin,
+					Width:  float32(gm.ScreenWidth)/2.0 - windowMargin*2,
+					Height: float32(gm.ScreenHeight) - windowMargin*2,
+				}
+			}
+
+		},
+		gm,
 	))
 
 	return gs
 }
 
 func (g *Game) ResizeScreen(gm *core.GameManager) {
-	for _, w := range g.windows {
-		w.ResizeWindow(gm)
-	}
+	g.UpdateWindowSizes(gm)
 }
 
 func (g *Game) UpdateScreen(gm *core.GameManager) {
@@ -97,5 +118,11 @@ func (g *Game) DrawScreenUI(gm *core.GameManager) {
 
 	for _, window := range g.windows {
 		window.DrawWindow(gm, g)
+	}
+}
+
+func (g *Game) UpdateWindowSizes(gm *core.GameManager) {
+	for _, window := range g.windows {
+		window.UpdateWindowSize(gm)
 	}
 }

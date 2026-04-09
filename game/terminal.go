@@ -48,6 +48,8 @@ func (t *TerminalWindow) HandleInput(gm *core.GameManager, state *Game) bool {
 	if rl.IsKeyPressed(rl.KeyTab) {
 		t.SetVisible(!t.IsVisible())
 		captured = true
+
+		state.UpdateWindowSizes(gm)
 	}
 
 	if t.IsVisible() {
