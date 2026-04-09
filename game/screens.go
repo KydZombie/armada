@@ -7,6 +7,8 @@ import (
 
 type MainMenuScreen struct{}
 
+func (s *MainMenuScreen) ResizeScreen(gm *core.GameManager) {}
+
 func (s *MainMenuScreen) UpdateScreen(gm *core.GameManager) {
 	if rl.IsKeyPressed(rl.KeySpace) {
 		gm.SetScreen(NewGameScreen(gm))
@@ -30,6 +32,7 @@ func NewSettingsScreen(currentScreen core.Screen) *SettingsScreen {
 	}
 }
 
+func (s *SettingsScreen) ResizeScreen(gm *core.GameManager) {}
 func (s *SettingsScreen) UpdateScreen(gm *core.GameManager) {}
 func (s *SettingsScreen) DrawScreen(gm *core.GameManager)   {}
 func (s *SettingsScreen) DrawScreenUI(gm *core.GameManager) {}

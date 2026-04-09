@@ -2,43 +2,60 @@ package game
 
 import (
 	"github.com/KydZombie/armada/core"
-	rg "github.com/gen2brain/raylib-go/raygui"
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
 type Game struct {
-	moving bool
-	pos    rl.Vector2
+	Train *Train
 
 	windows []core.Window[Game]
 }
 
 func NewGameScreen(gm *core.GameManager) *Game {
+	train := NewTrain()
+
 	gs := &Game{
-		moving: false,
-		pos:    rl.Vector2{X: 200, Y: 50},
+		Train: train,
 
 		windows: []core.Window[Game]{},
 	}
 
 	gs.windows = append(gs.windows, NewTerminalWindow(
-		rl.Rectangle{
-			X:      float32(gm.ScreenWidth) / 2.0,
-			Y:      float32(gm.ScreenHeight) / 2.0,
-			Width:  float32(gm.ScreenWidth) / 2.0,
-			Height: float32(gm.ScreenHeight) / 2.0,
+		func(gm *core.GameManager) rl.Rectangle {
+			return rl.Rectangle{
+				X:      float32(gm.ScreenWidth) / 2.0,
+				Y:      float32(gm.ScreenHeight) / 2.0,
+				Width:  float32(gm.ScreenWidth) / 2.0,
+				Height: float32(gm.ScreenHeight) / 2.0,
+			}
 		},
+		gm,
 		initializeCommands(),
+	))
+
+	gs.windows = append(gs.windows, NewTrainWindow(
+		func(gm *core.GameManager) rl.Rectangle {
+			return rl.Rectangle{
+				X:      32.0,
+				Y:      32.0,
+				Width:  float32(gm.ScreenWidth)/2.0 - 32.0,
+				Height: float32(gm.ScreenHeight) - 64.0,
+			}
+		},
+		gm,
+		train,
 	))
 
 	return gs
 }
 
-func (g *Game) UpdateScreen(gm *core.GameManager) {
-	if g.moving {
-		g.pos.X += 100.0 * gm.DeltaTime
+func (g *Game) ResizeScreen(gm *core.GameManager) {
+	for _, w := range g.windows {
+		w.ResizeWindow(gm)
 	}
+}
 
+func (g *Game) UpdateScreen(gm *core.GameManager) {
 	inputCaptured := false
 
 	for _, window := range g.windows {
@@ -53,7 +70,6 @@ func (g *Game) UpdateScreen(gm *core.GameManager) {
 
 func (g *Game) DrawScreen(gm *core.GameManager) {
 	rl.ClearBackground(rl.DarkBlue)
-	rl.DrawRectangleV(g.pos, rl.Vector2{X: 50, Y: 50}, rl.Red)
 
 	for _, window := range g.windows {
 		window.DrawWindow(gm, g)
@@ -61,21 +77,21 @@ func (g *Game) DrawScreen(gm *core.GameManager) {
 }
 
 func (g *Game) DrawScreenUI(gm *core.GameManager) {
-	var buttonText string
-	if g.moving {
-		buttonText = "Stop moving"
-	} else {
-		buttonText = "Start moving"
-	}
-
-	if rg.Button(rl.Rectangle{
-		X:      0,
-		Y:      50,
-		Width:  100,
-		Height: 60,
-	}, buttonText) {
-		g.moving = !g.moving
-	}
+	//var buttonText string
+	//if g.moving {
+	//	buttonText = "Stop moving"
+	//} else {
+	//	buttonText = "Start moving"
+	//}
+	//
+	//if rg.Button(rl.Rectangle{
+	//	X:      0,
+	//	Y:      50,
+	//	Width:  100,
+	//	Height: 60,
+	//}, buttonText) {
+	//	g.moving = !g.moving
+	//}
 
 	for _, window := range g.windows {
 		window.DrawWindow(gm, g)

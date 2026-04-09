@@ -5,6 +5,7 @@ import rl "github.com/gen2brain/raylib-go/raylib"
 type Config struct {
 	ScreenWidth, ScreenHeight int32
 	VSync                     bool
+	Resizeable                bool
 
 	Debug bool
 }

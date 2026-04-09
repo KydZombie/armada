@@ -32,9 +32,9 @@ type TerminalWindow struct {
 	history   []terminalHistoryItem
 }
 
-func NewTerminalWindow(bounds rl.Rectangle, commandDB *core.CommandDB[Game]) *TerminalWindow {
+func NewTerminalWindow(sizeFunc func(gm *core.GameManager) rl.Rectangle, gm *core.GameManager, commandDB *core.CommandDB[Game]) *TerminalWindow {
 	return &TerminalWindow{
-		BaseWindow: core.NewBaseWindow[Game](bounds, false),
+		BaseWindow: core.NewBaseWindow[Game](sizeFunc, gm, false),
 
 		commandDB: commandDB,
 

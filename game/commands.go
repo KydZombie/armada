@@ -39,27 +39,4 @@ func registerCombatCommands(db *core.CommandDB[Game]) {
 }
 
 func registerDebugCommands(db *core.CommandDB[Game]) {
-	db.RegisterCommand(core.Command[Game]{
-		Name: "startmove",
-		OnRun: func(args []string, game *Game) (string, bool) {
-			if game.moving {
-				return "Already moving!", false
-			}
-
-			game.moving = true
-			return "Started moving.", true
-		},
-	})
-
-	db.RegisterCommand(core.Command[Game]{
-		Name: "stopmove",
-		OnRun: func(args []string, game *Game) (string, bool) {
-			if !game.moving {
-				return "Already moving!", false
-			}
-
-			game.moving = false
-			return "Stopped moving.", true
-		},
-	})
 }

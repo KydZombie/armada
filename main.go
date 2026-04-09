@@ -7,26 +7,26 @@ import (
 )
 
 func initWindow(config core.Config) {
-	if config.VSync {
-		rl.SetConfigFlags(rl.FlagVsyncHint)
-	}
 
-	rl.InitWindow(config.ScreenWidth, config.ScreenHeight, "Armada")
-	rl.SetTargetFPS(int32(rl.GetMonitorRefreshRate(rl.GetCurrentMonitor())))
 }
 
 func main() {
-	config := core.Config{
-		ScreenWidth:  1280,
-		ScreenHeight: 720,
-		VSync:        false,
+	gameManager := core.NewGameManager(
+		"Armada",
+		core.Config{
+			ScreenWidth:  1280,
+			ScreenHeight: 720,
+			VSync:        false,
+			Resizeable:   true,
 
-		Debug: true,
-	}
-	initWindow(config)
+			Debug: true,
+		},
+	)
+
+	gameManager.CreateRaylibWindow()
 	defer rl.CloseWindow()
 
-	gameManager := core.NewGameManager(config, &game.MainMenuScreen{})
+	gameManager.SetScreen(&game.MainMenuScreen{})
 
 	for !rl.WindowShouldClose() {
 		gameManager.RunFrame()
