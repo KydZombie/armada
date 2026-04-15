@@ -1,11 +1,14 @@
 package game
 
-import "github.com/KydZombie/armada/core"
+import (
+	"github.com/KydZombie/armada/core"
+	rl "github.com/gen2brain/raylib-go/raylib"
+)
 
 type Room struct {
 	Id int
 
-	X, Y          int
+	Pos           rl.Vector2
 	Width, Height int
 
 	Doors []Door
@@ -38,8 +41,10 @@ func NewTrain(health int) *Train {
 	}
 
 	train.addRoom(Room{
-		X: 0,
-		Y: 0,
+		Pos: rl.Vector2{
+			X: 0,
+			Y: 0,
+		},
 
 		Width:  4,
 		Height: 3,
@@ -58,8 +63,10 @@ func NewTrain(health int) *Train {
 	})
 
 	train.addRoom(Room{
-		X: 5,
-		Y: 0,
+		Pos: rl.Vector2{
+			X: 5,
+			Y: 0,
+		},
 
 		Width:  4,
 		Height: 3,
@@ -88,8 +95,10 @@ func NewTrain(health int) *Train {
 	})
 
 	train.addRoom(Room{
-		X: 10,
-		Y: 0,
+		Pos: rl.Vector2{
+			X: 10,
+			Y: 0,
+		},
 
 		Width:  2,
 		Height: 3,
@@ -118,8 +127,10 @@ func NewTrain(health int) *Train {
 	})
 
 	train.addRoom(Room{
-		X: 12,
-		Y: 0,
+		Pos: rl.Vector2{
+			X: 12,
+			Y: 0,
+		},
 
 		Width:  2,
 		Height: 3,
@@ -148,8 +159,10 @@ func NewTrain(health int) *Train {
 	})
 
 	train.addRoom(Room{
-		X: 15,
-		Y: 0,
+		Pos: rl.Vector2{
+			X: 15,
+			Y: 0,
+		},
 
 		Width:  3,
 		Height: 3,

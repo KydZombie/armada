@@ -38,8 +38,8 @@ func (t TrainWindow) DrawWindow(gm *core.GameManager, state *Game) {
 
 	for _, room := range state.Train.Rooms {
 		roomBounds := rl.Rectangle{
-			X:      trainOffset.X + float32(room.X)*tileSize,
-			Y:      trainOffset.Y + float32(room.Y)*tileSize,
+			X:      trainOffset.X + room.Pos.X*tileSize,
+			Y:      trainOffset.Y + room.Pos.Y*tileSize,
 			Width:  float32(room.Width) * tileSize,
 			Height: float32(room.Height) * tileSize,
 		}
