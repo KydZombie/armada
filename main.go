@@ -6,10 +6,6 @@ import (
 	"github.com/gen2brain/raylib-go/raylib"
 )
 
-func initWindow(config core.Config) {
-
-}
-
 func main() {
 	gameManager := core.NewGameManager(
 		"Armada",
@@ -35,5 +31,4 @@ func main() {
 			break
 		}
 	}
-
 }

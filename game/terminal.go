@@ -34,7 +34,7 @@ type TerminalWindow struct {
 
 func NewTerminalWindow(sizeFunc func(gm *core.GameManager) rl.Rectangle, gm *core.GameManager, commandDB *core.CommandDB[Game]) *TerminalWindow {
 	return &TerminalWindow{
-		BaseWindow: core.NewBaseWindow[Game](sizeFunc, gm, false),
+		BaseWindow: core.NewBaseWindow[Game](sizeFunc, gm, true),
 
 		commandDB: commandDB,
 
@@ -43,39 +43,30 @@ func NewTerminalWindow(sizeFunc func(gm *core.GameManager) rl.Rectangle, gm *cor
 }
 
 func (t *TerminalWindow) HandleInput(gm *core.GameManager, state *Game) bool {
-	captured := t.IsVisible()
-
-	if rl.IsKeyPressed(rl.KeyTab) {
-		t.SetVisible(!t.IsVisible())
-		captured = true
-
-		state.UpdateWindowSizes(gm)
+	if !t.IsVisible() {
+		return false
 	}
 
-	if t.IsVisible() {
-		key := rl.GetKeyPressed()
-		if key == rl.KeyEnter {
-			cmd := t.inputText.String()
-			t.handleCommand(gm, state, cmd)
+	key := rl.GetKeyPressed()
+	if key == rl.KeyEnter {
+		cmd := t.inputText.String()
+		t.handleCommand(gm, state, cmd)
+		t.inputText.Reset()
+	} else if key == rl.KeyBackspace {
+		if len(t.inputText.String()) > 0 {
+			curr := t.inputText.String()
 			t.inputText.Reset()
-		} else if key == rl.KeyBackspace {
-			if len(t.inputText.String()) > 0 {
-				curr := t.inputText.String()
-				t.inputText.Reset()
-				_, size := utf8.DecodeLastRuneInString(curr)
-				t.inputText.WriteString(curr[:len(curr)-size])
-			}
-		} else {
-			r, isRune := util.KeyToAlphanumeric(key)
-			if isRune {
-				t.inputText.WriteRune(r)
-			}
+			_, size := utf8.DecodeLastRuneInString(curr)
+			t.inputText.WriteString(curr[:len(curr)-size])
 		}
-
-		key = rl.GetKeyPressed()
+	} else {
+		r, isRune := util.KeyToAlphanumeric(key)
+		if isRune {
+			t.inputText.WriteRune(r)
+		}
 	}
 
-	return captured
+	return true
 }
 
 func (t *TerminalWindow) UpdateWindow(gm *core.GameManager, state *Game) {

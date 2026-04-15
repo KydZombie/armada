@@ -12,7 +12,7 @@ type Game struct {
 }
 
 func NewGameScreen(gm *core.GameManager) *Game {
-	train := NewTrain()
+	train := NewTrain(100)
 
 	gs := &Game{
 		Train: train,
@@ -25,10 +25,10 @@ func NewGameScreen(gm *core.GameManager) *Game {
 	terminal := NewTerminalWindow(
 		func(gm *core.GameManager) rl.Rectangle {
 			return rl.Rectangle{
-				X:      float32(gm.ScreenWidth)/2.0 + windowMargin,
+				X:      windowMargin,
 				Y:      float32(gm.ScreenHeight)/2.0 + windowMargin,
-				Width:  float32(gm.ScreenWidth)/2.0 - windowMargin*2,
-				Height: float32(gm.ScreenHeight)/2.0 - windowMargin,
+				Width:  float32(gm.ScreenWidth)/2.0 - windowMargin,
+				Height: float32(gm.ScreenHeight)/2.0 - windowMargin*2,
 			}
 		},
 		gm,
@@ -42,8 +42,8 @@ func NewGameScreen(gm *core.GameManager) *Game {
 			return rl.Rectangle{
 				X:      windowMargin,
 				Y:      windowMargin,
-				Width:  float32(gm.ScreenWidth)/2.0 - windowMargin,
-				Height: float32(gm.ScreenHeight) - windowMargin*2,
+				Width:  float32(gm.ScreenWidth) - windowMargin*2,
+				Height: float32(gm.ScreenHeight)/2.0 - windowMargin,
 			}
 		},
 		gm,
@@ -51,22 +51,12 @@ func NewGameScreen(gm *core.GameManager) *Game {
 
 	gs.windows = append(gs.windows, NewBattleWindow(
 		func(gm *core.GameManager) rl.Rectangle {
-			if terminal.IsVisible() {
-				return rl.Rectangle{
-					X:      float32(gm.ScreenWidth)/2.0 + windowMargin,
-					Y:      windowMargin,
-					Width:  float32(gm.ScreenWidth)/2.0 - windowMargin*2,
-					Height: float32(gm.ScreenHeight)/2.0 - windowMargin,
-				}
-			} else {
-				return rl.Rectangle{
-					X:      float32(gm.ScreenWidth)/2.0 + windowMargin,
-					Y:      windowMargin,
-					Width:  float32(gm.ScreenWidth)/2.0 - windowMargin*2,
-					Height: float32(gm.ScreenHeight) - windowMargin*2,
-				}
+			return rl.Rectangle{
+				X:      float32(gm.ScreenWidth)/2.0 + windowMargin,
+				Y:      float32(gm.ScreenHeight)/2.0 + windowMargin,
+				Width:  float32(gm.ScreenWidth)/2.0 - windowMargin*2,
+				Height: float32(gm.ScreenHeight)/2.0 - windowMargin*2,
 			}
-
 		},
 		gm,
 	))
