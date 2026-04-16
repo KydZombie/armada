@@ -8,7 +8,8 @@ import (
 type Game struct {
 	Train *Train
 
-	windows []core.Window[Game]
+	windows  []core.Window[Game]
+	Terminal *Terminal
 }
 
 func NewGameScreen(gm *core.GameManager) *Game {
@@ -18,6 +19,9 @@ func NewGameScreen(gm *core.GameManager) *Game {
 		Train: train,
 
 		windows: []core.Window[Game]{},
+		Terminal: &Terminal{
+			commandDB: initializeCommands(),
+		},
 	}
 
 	const windowMargin = 16.0
@@ -32,7 +36,7 @@ func NewGameScreen(gm *core.GameManager) *Game {
 			}
 		},
 		gm,
-		initializeCommands(),
+		gs.Terminal,
 	)
 
 	gs.windows = append(gs.windows, terminal)

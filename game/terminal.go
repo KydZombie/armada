@@ -10,35 +10,60 @@ import (
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
-type historyType int8
+type TerminalMessageType int8
 
 const (
-	userInputType historyType = iota
-	standardReturnType
-	errorReturnType
+	UserInputMessage TerminalMessageType = iota
+	StandardOutputMessage
+	ErrorMessageMessage
 )
 
 type terminalHistoryItem struct {
-	historyType historyType
+	historyType TerminalMessageType
 	text        string
+}
+
+type Terminal struct {
+	commandDB *core.CommandDB[Game]
+
+	inputText strings.Builder
+
+	history            []terminalHistoryItem
+	currentHistoryLine int32
+}
+
+func (t *Terminal) OutputText(text string, messageType TerminalMessageType) {
+	t.history = append(t.history, terminalHistoryItem{historyType: messageType, text: text})
+	t.currentHistoryLine++
+}
+
+func (t *Terminal) handleCommand(gm *core.GameManager, state *Game, rawCmd string) {
+	gm.Log.Println("Command: ", rawCmd)
+
+	t.OutputText(fmt.Sprint("> ", t.inputText.String()), UserInputMessage)
+
+	result, success := t.commandDB.ParseAndRunCommand(rawCmd, state)
+	if len(result) != 0 {
+		var messageType TerminalMessageType
+		if success {
+			messageType = StandardOutputMessage
+		} else {
+			messageType = ErrorMessageMessage
+		}
+
+		t.OutputText(result, messageType)
+	}
 }
 
 type TerminalWindow struct {
 	core.BaseWindow[Game]
-
-	commandDB *core.CommandDB[Game]
-
-	inputText strings.Builder
-	history   []terminalHistoryItem
+	*Terminal
 }
 
-func NewTerminalWindow(sizeFunc func(gm *core.GameManager) rl.Rectangle, gm *core.GameManager, commandDB *core.CommandDB[Game]) *TerminalWindow {
+func NewTerminalWindow(sizeFunc func(gm *core.GameManager) rl.Rectangle, gm *core.GameManager, terminal *Terminal) *TerminalWindow {
 	return &TerminalWindow{
 		BaseWindow: core.NewBaseWindow[Game](sizeFunc, gm, true),
-
-		commandDB: commandDB,
-
-		inputText: strings.Builder{},
+		Terminal:   terminal,
 	}
 }
 
@@ -48,7 +73,15 @@ func (t *TerminalWindow) HandleInput(gm *core.GameManager, state *Game) bool {
 	}
 
 	key := rl.GetKeyPressed()
-	if key == rl.KeyEnter {
+	if key == rl.KeyUp {
+		if t.currentHistoryLine < int32(len(t.history)) {
+			t.currentHistoryLine++
+		}
+	} else if key == rl.KeyDown {
+		if t.currentHistoryLine > 0 {
+			t.currentHistoryLine--
+		}
+	} else if key == rl.KeyEnter {
 		cmd := t.inputText.String()
 		t.handleCommand(gm, state, cmd)
 		t.inputText.Reset()
@@ -77,23 +110,33 @@ func (t *TerminalWindow) DrawWindow(gm *core.GameManager, state *Game) {
 	if !t.IsVisible() {
 		return
 	}
+	const fontSize int32 = 24
+
+	const innerOffset int32 = 4
 
 	bounds := t.GetBounds()
-	offsetX := int32(bounds.X) + 4
-	offsetY := int32(bounds.Y) + 4
+	offsetX := int32(bounds.X) + innerOffset
+	offsetY := int32(bounds.Y) + innerOffset
 
 	rl.DrawRectangleRec(bounds, rl.Black)
-	rl.DrawText(fmt.Sprint("> ", t.inputText.String()), offsetX, offsetY, 24, rl.White)
+	rl.DrawText(fmt.Sprint("> ", t.inputText.String()), offsetX, offsetY, fontSize, rl.White)
 
-	for i := range t.history {
-		historyItem := t.history[len(t.history)-i-1]
+	spaceToShowHistory := bounds.Height - float32(innerOffset) - float32(fontSize)
+	maxLinesToShow := int32(spaceToShowHistory / float32(fontSize))
+	for i := range maxLinesToShow {
+		lineNumber := t.currentHistoryLine - 1 - i
+		if lineNumber >= int32(len(t.history)) || lineNumber < 0 {
+			break
+		}
+
+		historyItem := t.history[lineNumber]
 		var color rl.Color
 		switch historyItem.historyType {
-		case userInputType:
+		case UserInputMessage:
 			color = rl.DarkGray
-		case standardReturnType:
+		case StandardOutputMessage:
 			color = rl.LightGray
-		case errorReturnType:
+		case ErrorMessageMessage:
 			color = rl.Red
 		}
 		rl.DrawText(historyItem.text, offsetX, offsetY+int32(i+1)*24, 24, color)
@@ -102,28 +145,4 @@ func (t *TerminalWindow) DrawWindow(gm *core.GameManager, state *Game) {
 
 func (t *TerminalWindow) DrawWindowUI(gm *core.GameManager, state *Game) {
 
-}
-
-func (t *TerminalWindow) handleCommand(gm *core.GameManager, state *Game, rawCmd string) {
-	gm.Log.Println("Command: ", rawCmd)
-
-	t.history = append(t.history, terminalHistoryItem{
-		historyType: userInputType,
-		text:        fmt.Sprint("> ", t.inputText.String()),
-	})
-
-	result, success := t.commandDB.ParseAndRunCommand(rawCmd, state)
-	if len(result) != 0 {
-		var historyType historyType
-		if success {
-			historyType = standardReturnType
-		} else {
-			historyType = errorReturnType
-		}
-
-		t.history = append(t.history, terminalHistoryItem{
-			historyType: historyType,
-			text:        result,
-		})
-	}
 }
