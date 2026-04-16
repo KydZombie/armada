@@ -1,6 +1,8 @@
 package game
 
 import (
+	"fmt"
+
 	"github.com/KydZombie/armada/core"
 )
 
@@ -21,8 +23,18 @@ func registerGenericCommands(db *core.CommandDB[Game]) {
 	db.RegisterCommand(core.Command[Game]{
 		Name: "help",
 		OnRun: func(args []string, game *Game) (string, bool) {
-			return "You can type commands here!", true
+			for _, command := range db.CmdMap {
+				if command.Description != nil {
+					game.Terminal.OutputText(fmt.Sprint(command.Name, " ^"), StandardOutputMessage)
+					for _, line := range command.Description {
+						game.Terminal.OutputText(fmt.Sprint("  ", line), StandardOutputMessage)
+					}
+				}
+			}
+
+			return "", true
 		},
+		Description: []string{"This help command!"},
 	})
 }
 
