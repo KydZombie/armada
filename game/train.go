@@ -16,6 +16,10 @@ type Room struct {
 	System System
 }
 
+func (room *Room) GetRune() rune {
+	return rune('A' + room.Id)
+}
+
 type RoomPos struct {
 	RoomId int
 	X, Y   int
@@ -184,6 +188,10 @@ func NewTrain(health int) *Train {
 }
 
 func (t *Train) addRoom(room Room) {
-	room.Id = len(room.Doors)
+	room.Id = len(t.Rooms)
 	t.Rooms = append(t.Rooms, room)
+}
+
+func (t *Train) GetRoom(roomId int) *Room {
+	return &t.Rooms[roomId]
 }

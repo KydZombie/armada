@@ -66,6 +66,8 @@ func (t TrainWindow) DrawWindow(gm *core.GameManager, state *Game) {
 			}
 			rl.DrawRectangleRec(doorBounds, rl.Green)
 		}
+
+		rl.DrawText(string([]rune{room.GetRune()}), int32(roomBounds.X)+4, int32(roomBounds.Y)+4, 24, rl.Black)
 	}
 }
 
