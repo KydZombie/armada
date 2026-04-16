@@ -35,6 +35,7 @@ func (t TrainWindow) DrawWindow(gm *core.GameManager, state *Game) {
 	}
 
 	const tileSize float32 = 48.0
+	const roomBorderThickness float32 = 3.0
 
 	for _, room := range state.Train.Rooms {
 		roomBounds := rl.Rectangle{
@@ -56,15 +57,32 @@ func (t TrainWindow) DrawWindow(gm *core.GameManager, state *Game) {
 			}
 		}
 
-		rl.DrawRectangleLinesEx(roomBounds, 3.0, rl.Black)
+		rl.DrawRectangleLinesEx(roomBounds, roomBorderThickness, rl.Black)
+		doorThickness := tileSize / 8
+		spaceAroundSideOfDoor := tileSize / 6 // Essentially inverse of door width
 		for _, door := range room.Doors {
-			doorBounds := rl.Rectangle{
-				X:      roomBounds.X + float32(door.X)*tileSize + (tileSize / 4),
-				Y:      roomBounds.Y + float32(door.Y)*tileSize + (tileSize / 4),
-				Width:  tileSize / 2,
-				Height: tileSize / 2,
+			var doorBounds rl.Rectangle
+			switch door.Facing {
+			case core.FacingLeft:
+				doorBounds = rl.Rectangle{
+					X:      roomBounds.X + float32(door.X)*tileSize + roomBorderThickness,
+					Y:      roomBounds.Y + float32(door.Y)*tileSize + spaceAroundSideOfDoor,
+					Width:  doorThickness,
+					Height: tileSize - 2*spaceAroundSideOfDoor,
+				}
+			case core.FacingRight:
+				doorBounds = rl.Rectangle{
+					X:      roomBounds.X + float32(door.X+1)*tileSize - doorThickness - roomBorderThickness,
+					Y:      roomBounds.Y + float32(door.Y)*tileSize + spaceAroundSideOfDoor,
+					Width:  doorThickness,
+					Height: tileSize - 2*spaceAroundSideOfDoor,
+				}
+			default:
+				gm.ErrLog.Println("core.FacingUp and core.FacingDown door rendering is not implemented yet.")
+				doorBounds = rl.Rectangle{X: 0, Y: 0, Width: 0, Height: 0}
 			}
-			rl.DrawRectangleRec(doorBounds, rl.Green)
+
+			rl.DrawRectangleRec(doorBounds, rl.Orange)
 		}
 
 		rl.DrawText(string([]rune{room.GetRune()}), int32(roomBounds.X)+4, int32(roomBounds.Y)+4, 24, rl.Black)
