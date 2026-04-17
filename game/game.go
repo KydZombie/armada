@@ -7,15 +7,18 @@ import (
 
 type Game struct {
 	Train *Train
+	Enemy Enemy
 
 	windows []core.Window[Game]
 }
 
 func NewGameScreen(gm *core.GameManager) *Game {
 	train := NewTrain(100)
+	enemy := NewBasicEnemy("Training Drone", 20, 3)
 
 	gs := &Game{
 		Train: train,
+		Enemy: enemy,
 
 		windows: []core.Window[Game]{},
 	}
