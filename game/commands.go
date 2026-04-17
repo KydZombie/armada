@@ -82,6 +82,7 @@ func registerCombatCommands(db *core.CommandDB[Game]) {
 				game.Enemy.Name(),
 			), true
 		},
+		Description: []string{"Attack the current enemy."},
 	})
 
 	// status shows the current state of the enemy in the battle.
@@ -105,6 +106,7 @@ func registerCombatCommands(db *core.CommandDB[Game]) {
 				statusText,
 			), true
 		},
+		Description: []string{"Get the status of the enemy."},
 	})
 }
 
