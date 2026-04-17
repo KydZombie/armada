@@ -9,11 +9,14 @@ import (
 
 type BattleWindow struct {
 	core.BaseWindow[Game]
+
+	enemyTexture rl.Texture2D
 }
 
 func NewBattleWindow(sizeFunc func(gm *core.GameManager) rl.Rectangle, gm *core.GameManager) *BattleWindow {
 	return &BattleWindow{
-		BaseWindow: core.NewBaseWindow[Game](sizeFunc, gm, true),
+		BaseWindow:   core.NewBaseWindow[Game](sizeFunc, gm, true),
+		enemyTexture: rl.LoadTexture("assets/enemy.png"),
 	}
 }
 
@@ -30,9 +33,54 @@ func (b BattleWindow) DrawWindow(gm *core.GameManager, state *Game) {
 	bounds := b.GetBounds()
 	rl.DrawRectangleRec(bounds, rl.Red)
 
+	// Keep the text near the top-left corner with a small amount of padding
+	// so it is easy to read and does not touch the edges of the window.
+	textX := int32(bounds.X) + 12
+	textY := int32(bounds.Y) + 12
+
+	// Use padding from the top and right edges so the enemy image sits on
+	// the right side of the panel instead of overlapping the text block.
+	topPadding := float32(12)
+	rightPadding := float32(12)
+
+	// Make the image square and base its size on the panel height so it
+	// scales with the battle window. Using a smaller fraction keeps it from
+	// becoming too large for short windows.
+	imageSize := bounds.Height - topPadding*2
+	if imageSize > bounds.Height*0.6 {
+		imageSize = bounds.Height * 0.6
+	}
+
+	// Position the image box relative to the battle window bounds.
+	// This keeps the box anchored to the bottom-right corner with
+	// consistent padding from the edges of the battle window.
+	holderBounds := rl.Rectangle{
+		X:      bounds.X + bounds.Width - rightPadding - imageSize,
+		Y:      bounds.Y + bounds.Height - topPadding - imageSize,
+		Width:  imageSize,
+		Height: imageSize,
+	}
+	rl.DrawRectangleRec(holderBounds, rl.DarkGray)
+	rl.DrawRectangleLinesEx(holderBounds, 2, rl.White)
+
+	// Draw the placeholder enemy image scaled to fit inside the holder.
+	rl.DrawTexturePro(
+		b.enemyTexture,
+		rl.Rectangle{
+			X:      0,
+			Y:      0,
+			Width:  float32(b.enemyTexture.Width),
+			Height: float32(b.enemyTexture.Height),
+		},
+		holderBounds,
+		rl.Vector2{},
+		0,
+		rl.White,
+	)
+
 	// If there is no enemy yet, show a simple placeholder message.
 	if state.Enemy == nil {
-		rl.DrawText("No enemy", int32(bounds.X)+8, int32(bounds.Y)+8, 24, rl.White)
+		rl.DrawText("No enemy", textX, textY, 24, rl.White)
 		return
 	}
 
@@ -47,9 +95,6 @@ func (b BattleWindow) DrawWindow(gm *core.GameManager, state *Game) {
 		statusText = "Status: Defeated"
 		statusColor = rl.Yellow
 	}
-
-	textX := int32(bounds.X) + 8
-	textY := int32(bounds.Y) + 8
 
 	rl.DrawText(nameText, textX, textY, 24, rl.White)
 	rl.DrawText(healthText, textX, textY+28, 24, rl.White)

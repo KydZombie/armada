@@ -73,6 +73,29 @@ func registerCombatCommands(db *core.CommandDB[Game]) {
 			), true
 		},
 	})
+
+	// status shows the current state of the enemy in the battle.
+	db.RegisterCommand(core.Command[Game]{
+		Name: "status",
+		OnRun: func(args []string, game *Game) (string, bool) {
+			if game.Enemy == nil {
+				return "There is no enemy to inspect.", false
+			}
+
+			statusText := "alive"
+			if !game.Enemy.Alive() {
+				statusText = "dead"
+			}
+
+			return fmt.Sprintf(
+				"Enemy: %s. HP: %d/%d. Status: %s.",
+				game.Enemy.Name(),
+				game.Enemy.Health(),
+				game.Enemy.MaxHealth(),
+				statusText,
+			), true
+		},
+	})
 }
 
 func registerDebugCommands(db *core.CommandDB[Game]) {
