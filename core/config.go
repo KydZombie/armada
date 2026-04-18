@@ -7,6 +7,10 @@ type Config struct {
 	VSync                     bool
 	Resizeable                bool
 
+	MasterVolume float32
+	MusicVolume  float32
+	SFXVolume    float32
+
 	Debug bool
 }
 

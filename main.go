@@ -3,7 +3,7 @@ package main
 import (
 	"github.com/KydZombie/armada/core"
 	"github.com/KydZombie/armada/game"
-	"github.com/gen2brain/raylib-go/raylib"
+	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
 func main() {
@@ -14,6 +14,9 @@ func main() {
 			ScreenHeight: 720,
 			VSync:        false,
 			Resizeable:   true,
+			MasterVolume: 1.0,
+			MusicVolume:  0.8,
+			SFXVolume:    0.8,
 
 			Debug: true,
 		},
@@ -22,7 +25,7 @@ func main() {
 	gameManager.CreateRaylibWindow()
 	defer rl.CloseWindow()
 
-	gameManager.SetScreen(&game.MainMenuScreen{})
+	gameManager.SetScreen(game.NewMainMenuScreen())
 
 	for !rl.WindowShouldClose() {
 		gameManager.RunFrame()
