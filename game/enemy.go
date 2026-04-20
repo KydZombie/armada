@@ -13,6 +13,17 @@ type Enemy interface {
 	Attack() int
 }
 
+// EnemyPart is groundwork for future targeted combat, such as aiming
+// attacks at the head or body. The current prototype does not use
+// parts in combat yet, but storing them now makes later expansion easier.
+type EnemyPart struct {
+	Name string
+
+	Health int
+
+	MaxHealth int
+}
+
 // BasicEnemy is a simple starter enemy implementation for the prototype.
 // The fields are intentionally small and direct so the behavior is easy
 // to understand and expand later.
@@ -28,17 +39,50 @@ type BasicEnemy struct {
 
 	// attackPower is the amount of damage this enemy deals when it attacks.
 	attackPower int
+
+	// attackCooldown is groundwork for future enemy attack timing.
+	// It stores how many ticks the enemy waits between attacks.
+	attackCooldown int
+
+	// attackTimer is groundwork for future enemy attack timing.
+	// It stores the current countdown until the next attack.
+	attackTimer int
+
+	// Parts is groundwork for future targeted attacks. For now, combat still
+	// uses the main enemy health values, so these parts are informational only.
+	Parts []*EnemyPart
 }
 
 // NewBasicEnemy creates a basic enemy with the provided stats.
 // health and maxHealth start with the same value because a new enemy
 // should begin at full health.
 func NewBasicEnemy(name string, health int, attackPower int) *BasicEnemy {
+	const defaultAttackCooldown = 120
+
 	return &BasicEnemy{
-		name:        name,
-		health:      health,
-		maxHealth:   health,
-		attackPower: attackPower,
+		name:           name,
+		health:         health,
+		maxHealth:      health,
+		attackPower:    attackPower,
+		attackCooldown: defaultAttackCooldown,
+		attackTimer:    defaultAttackCooldown,
+		Parts: []*EnemyPart{
+			{
+				Name:      "Core",
+				Health:    health,
+				MaxHealth: health,
+			},
+			{
+				Name:      "Armor",
+				Health:    health,
+				MaxHealth: health,
+			},
+			{
+				Name:      "Tail",
+				Health:    health,
+				MaxHealth: health,
+			},
+		},
 	}
 }
 
