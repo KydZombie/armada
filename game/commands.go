@@ -2,6 +2,7 @@ package game
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/KydZombie/armada/core"
 )
@@ -43,7 +44,71 @@ func registerInfoCommands(db *core.CommandDB[Game]) {
 }
 
 func registerUnitCommands(db *core.CommandDB[Game]) {
+	db.RegisterCommand(core.Command[Game]{
+		Name: "selc",
+		OnRun: func(args []string, game *Game) (string, bool) {
+			if len(args) != 1 {
+				return "Invalid number of arguments", false
+			}
 
+			characterIdx, err := strconv.Atoi(args[0])
+			characterIdx -= 1
+			if err != nil || characterIdx < 0 || characterIdx >= len(game.Train.Characters) {
+				return fmt.Sprintf("Invalid character index (%s).", args[0]), false
+			}
+			game.SelectedCharacterIndex = characterIdx
+			character := game.Train.Characters[characterIdx]
+
+			return fmt.Sprint("Selected ", character.Name, "."), true
+		},
+		Description: []string{"Select a character"},
+	})
+
+	db.RegisterCommand(core.Command[Game]{
+		Name: "move",
+		OnRun: func(args []string, game *Game) (string, bool) {
+			if len(args) != 3 {
+				return "Invalid number of arguments", false
+			}
+
+			if game.SelectedCharacterIndex < 0 {
+				return "No character selected", false
+			}
+
+			roomRunes := []rune(args[0])
+			if len(roomRunes) != 1 {
+				return "Invalid room", false
+			}
+
+			roomRune := roomRunes[0]
+			roomIdx := int(roomRune - 'a')
+
+			if roomIdx < 0 || roomIdx >= len(game.Train.Rooms) {
+				return "Invalid room", false
+			}
+
+			room := game.Train.Rooms[roomIdx]
+
+			x, err := strconv.Atoi(args[1])
+			if err != nil || x < 0 || x >= room.Width {
+				return "Invalid x", false
+			}
+			y, err := strconv.Atoi(args[2])
+			if err != nil || y < 0 || y >= room.Height {
+				return "Invalid y", false
+			}
+
+			character := game.Train.Characters[game.SelectedCharacterIndex]
+			character.Pos.RoomId = roomIdx
+			character.Pos.X = x
+			character.Pos.Y = y
+
+			game.SelectedCharacterIndex = -1
+
+			return fmt.Sprint("Moved ", character.Name), true
+		},
+		Description: []string{"Move a character", "Takes arguments [room], [x], and [y]"},
+	})
 }
 
 func registerCombatCommands(db *core.CommandDB[Game]) {

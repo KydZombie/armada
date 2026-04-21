@@ -11,6 +11,8 @@ type Game struct {
 
 	windows  []core.Window[Game]
 	Terminal *Terminal
+
+	SelectedCharacterIndex int
 }
 
 func NewGameScreen(gm *core.GameManager) *Game {
@@ -25,6 +27,8 @@ func NewGameScreen(gm *core.GameManager) *Game {
 		Terminal: &Terminal{
 			commandDB: initializeCommands(),
 		},
+
+		SelectedCharacterIndex: -1,
 	}
 
 	const windowMargin = 16.0

@@ -20,6 +20,16 @@ func (room *Room) GetRune() rune {
 	return rune('A' + room.Id)
 }
 
+func (room *Room) GetCharacters(train *Train) []*Character {
+	var characters []*Character
+	for _, character := range train.Characters {
+		if character.Pos.RoomId == room.Id {
+			characters = append(characters, character)
+		}
+	}
+	return characters
+}
+
 type RoomPos struct {
 	RoomId int
 	X, Y   int
@@ -35,13 +45,15 @@ type Door struct {
 type Train struct {
 	Health, MaxHealth int
 	Rooms             []Room
+	Characters        []*Character
 }
 
 func NewTrain(health int) *Train {
 	train := &Train{
-		Health:    health,
-		MaxHealth: health,
-		Rooms:     make([]Room, 0),
+		Health:     health,
+		MaxHealth:  health,
+		Rooms:      make([]Room, 0),
+		Characters: make([]*Character, 0),
 	}
 
 	train.addRoom(Room{
@@ -184,6 +196,9 @@ func NewTrain(health int) *Train {
 		},
 	})
 
+	train.addCharacter(NewCharacter("John", 80, RoomPos{RoomId: 0, X: 0, Y: 0}))
+	train.addCharacter(NewCharacter("Mary", 60, RoomPos{RoomId: 1, X: 0, Y: 0}))
+
 	return train
 }
 
@@ -194,4 +209,9 @@ func (t *Train) addRoom(room Room) {
 
 func (t *Train) GetRoom(roomId int) *Room {
 	return &t.Rooms[roomId]
+}
+
+func (t *Train) addCharacter(character *Character) {
+	character.Id = len(t.Characters)
+	t.Characters = append(t.Characters, character)
 }

@@ -1,6 +1,8 @@
 package game
 
 import (
+	"fmt"
+
 	"github.com/KydZombie/armada/core"
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
@@ -55,6 +57,33 @@ func (t TrainWindow) DrawWindow(gm *core.GameManager, state *Game) {
 				rl.DrawRectangleRec(tileBounds, rl.RayWhite)
 				rl.DrawRectangleLinesEx(tileBounds, 2.0, rl.Gray)
 			}
+		}
+
+		for _, character := range room.GetCharacters(state.Train) {
+			pos := rl.Vector2{
+				X: roomBounds.X + float32(character.Pos.X)*tileSize,
+				Y: roomBounds.Y + float32(character.Pos.Y)*tileSize,
+			}
+
+			var renderColor rl.Color
+			if state.SelectedCharacterIndex == character.Id {
+				renderColor = rl.Green
+			} else {
+				renderColor = rl.DarkGray
+			}
+			rl.DrawCircleV(rl.Vector2AddValue(pos, tileSize/2), tileSize/3, renderColor)
+
+			const fontSize int32 = 16
+			text := fmt.Sprint(character.Id + 1)
+			textWidth := rl.MeasureText(text, fontSize)
+
+			rl.DrawText(
+				text,
+				int32(pos.X+tileSize/2-float32(textWidth)/2),
+				int32(pos.Y+tileSize/2-float32(fontSize)/2),
+				fontSize,
+				rl.White,
+			)
 		}
 
 		rl.DrawRectangleLinesEx(roomBounds, roomBorderThickness, rl.Black)
