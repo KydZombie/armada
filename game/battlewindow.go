@@ -2,7 +2,6 @@ package game
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/KydZombie/armada/core"
 	rl "github.com/gen2brain/raylib-go/raylib"
@@ -76,21 +75,35 @@ func (b BattleWindow) DrawWindow(gm *core.GameManager, state *Game) {
 		Width:  popupWidth,
 		Height: popupHeight,
 	}
+	selectedTargetLabel := rune('A' + state.SelectedRoom)
+	selectedTargetText := fmt.Sprintf("Selected: [%c]", selectedTargetLabel)
+	selectedTargetDisplayText := selectedTargetText
+	if state.SelectionPopupFrames > 0 && state.SelectionPopupText != "" {
+		selectedTargetDisplayText = state.SelectionPopupText
+	}
+	var selectedEnemy Enemy
+	if state.SelectedRoom >= 0 && state.SelectedRoom < len(state.RoomEnemies) {
+		selectedEnemy = state.RoomEnemies[state.SelectedRoom]
+	}
+	displayEnemy := selectedEnemy
+	if displayEnemy == nil {
+		displayEnemy = state.Enemy
+	}
 	cooldownBarBounds := rl.Rectangle{}
 	cooldownFillBounds := rl.Rectangle{}
 	drawCooldownBar := false
 	textX := int32(bounds.X) + 12
 	textY := int32(bounds.Y) + 12
 
-	if state.Enemy == nil {
+	if displayEnemy == nil {
 		rl.DrawText("No enemy", textX, textY, 24, rl.White)
 	} else {
-		nameText := fmt.Sprint("Enemy: ", state.Enemy.Name())
-		healthText := fmt.Sprintf("Health: %d/%d", state.Enemy.Health(), state.Enemy.MaxHealth())
+		nameText := fmt.Sprint("Enemy: ", displayEnemy.Name())
+		healthText := fmt.Sprintf("Health: %d/%d", displayEnemy.Health(), displayEnemy.MaxHealth())
 
 		statusText := "Status: Alive"
 		statusColor := rl.White
-		if !state.Enemy.Alive() {
+		if !displayEnemy.Alive() {
 			statusText = "Status: Defeated"
 			statusColor = rl.Yellow
 		}
@@ -100,7 +113,7 @@ func (b BattleWindow) DrawWindow(gm *core.GameManager, state *Game) {
 		rl.DrawText(healthText, textX, textY+28, 24, rl.White)
 		rl.DrawText(statusText, textX, statusTextY, 24, statusColor)
 
-		enemy, ok := state.Enemy.(*BasicEnemy)
+		enemy, ok := displayEnemy.(*BasicEnemy)
 		if ok {
 			if enemy.attackCooldown > 0 {
 				timerFillRatio := 1 - (float32(enemy.attackTimer) / float32(enemy.attackCooldown))
@@ -146,7 +159,7 @@ func (b BattleWindow) DrawWindow(gm *core.GameManager, state *Game) {
 			barHeight := float32(10)
 			partSpacing := int32(34)
 			maxPartWidth := int32(bounds.Width) - 24
-			if state.SelectionPopupFrames > 0 && popupWidth > 0 {
+			if popupWidth > 0 {
 				maxPartWidth = int32(selectedLabelBounds.X) - partTextX - 12
 			}
 
@@ -211,31 +224,26 @@ func (b BattleWindow) DrawWindow(gm *core.GameManager, state *Game) {
 		rl.DrawRectangleRec(cooldownFillBounds, rl.Orange)
 	}
 
-	if state.SelectionPopupFrames > 0 && popupWidth > 0 && popupHeight > 0 {
+	if popupWidth > 0 && popupHeight > 0 {
 		rl.DrawRectangleRec(selectedLabelBounds, rl.DarkGray)
 		rl.DrawRectangleLinesEx(selectedLabelBounds, 2, rl.White)
 
 		rl.DrawText(
-			state.SelectionPopupText,
+			selectedTargetDisplayText,
 			int32(selectedLabelBounds.X)+8,
 			int32(selectedLabelBounds.Y)+10,
 			20,
 			rl.White,
 		)
 
-		b.drawPopupTargetImage(selectedLabelBounds, state.SelectionPopupText)
+		b.drawPopupTargetImage(selectedLabelBounds, selectedTargetLabel)
 	}
 }
 
 func (b BattleWindow) DrawWindowUI(gm *core.GameManager, state *Game) {
 }
 
-func (b BattleWindow) drawPopupTargetImage(popupBounds rl.Rectangle, popupText string) {
-	roomLabel, ok := popupTargetRune(popupText)
-	if !ok {
-		return
-	}
-
+func (b BattleWindow) drawPopupTargetImage(popupBounds rl.Rectangle, roomLabel rune) {
 	texture, ok := b.enemyTextures[roomLabel]
 	if !ok || texture.ID == 0 {
 		return
@@ -267,23 +275,4 @@ func (b BattleWindow) drawPopupTargetImage(popupBounds rl.Rectangle, popupText s
 		0,
 		rl.White,
 	)
-}
-
-func popupTargetRune(popupText string) (rune, bool) {
-	start := strings.IndexRune(popupText, '[')
-	if start < 0 || start+1 >= len(popupText) {
-		return 0, false
-	}
-
-	end := strings.IndexRune(popupText[start:], ']')
-	if end <= 1 {
-		return 0, false
-	}
-
-	target := rune(popupText[start+1])
-	if target < 'A' || target > 'Z' {
-		return 0, false
-	}
-
-	return target, true
 }

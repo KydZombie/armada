@@ -1,5 +1,7 @@
 package game
 
+import "math/rand"
+
 // Enemy describes the small set of behaviors the rest of the game
 // can expect from an enemy. Right now we only need to know whether
 // the enemy is still alive, how it takes damage, and how much damage
@@ -11,6 +13,7 @@ type Enemy interface {
 	Alive() bool
 	TakeDamage(amount int)
 	Attack() int
+	AdvanceTurn() (bool, int)
 }
 
 // EnemyPart is groundwork for future targeted combat, such as aiming
@@ -40,12 +43,10 @@ type BasicEnemy struct {
 	// attackPower is the amount of damage this enemy deals when it attacks.
 	attackPower int
 
-	// attackCooldown is groundwork for future enemy attack timing.
-	// It stores how many ticks the enemy waits between attacks.
+	// attackCooldown stores how many turns this enemy waits between attacks.
 	attackCooldown int
 
-	// attackTimer is groundwork for future enemy attack timing.
-	// It stores the current countdown until the next attack.
+	// attackTimer stores the current turn countdown until the next attack.
 	attackTimer int
 
 	// Parts is groundwork for future targeted attacks. For now, combat still
@@ -57,7 +58,7 @@ type BasicEnemy struct {
 // health and maxHealth start with the same value because a new enemy
 // should begin at full health.
 func NewBasicEnemy(name string, health int, attackPower int) *BasicEnemy {
-	const defaultAttackCooldown = 120
+	const defaultAttackCooldown = 2
 
 	return &BasicEnemy{
 		name:           name,
@@ -125,4 +126,29 @@ func (e *BasicEnemy) TakeDamage(amount int) {
 // Attack returns the amount of damage this enemy should deal.
 func (e *BasicEnemy) Attack() int {
 	return e.attackPower
+}
+
+func (e *BasicEnemy) AdvanceTurn() (bool, int) {
+	if !e.Alive() || e.attackCooldown <= 0 {
+		return false, 0
+	}
+
+	if e.attackTimer > 0 {
+		e.attackTimer--
+	}
+
+	if e.attackTimer > 0 {
+		return false, 0
+	}
+
+	damage := e.Attack()
+	e.attackTimer = randomEnemyCooldown()
+	return true, damage
+}
+
+func randomEnemyCooldown() int {
+	const minEnemyCooldown = 1
+	const maxEnemyCooldown = 3
+
+	return rand.Intn(maxEnemyCooldown-minEnemyCooldown+1) + minEnemyCooldown
 }

@@ -9,6 +9,8 @@ type Game struct {
 	Train *Train
 	Enemy Enemy
 
+	PlayerWeapon Weapon
+
 	RoomEnemies            []Enemy
 	Enemies                []Enemy
 	SelectedRoom           int
@@ -22,13 +24,14 @@ type Game struct {
 func NewGameScreen(gm *core.GameManager) *Game {
 	train := NewTrain(100)
 	roomEnemies := []Enemy{
-		NewBasicEnemy("Iron Crawler", 20, 3),
-		NewBasicEnemy("Steel Wasp", 14, 2),
+		NewBasicEnemy("Steel Crawler", 20, 3),
+		NewBasicEnemy("Iron crawler", 14, 2),
 		nil,
 	}
 
 	gs := &Game{
 		Train:        train,
+		PlayerWeapon: NewWeapon("Cannon", 1),
 		RoomEnemies:  roomEnemies,
 		Enemies:      roomEnemies,
 		SelectedRoom: 0,
@@ -87,44 +90,10 @@ func (g *Game) ResizeScreen(gm *core.GameManager) {
 }
 
 func (g *Game) UpdateScreen(gm *core.GameManager) {
-	const enemyTimerFrameDelay = 10
-
 	inputCaptured := false
 
 	if g.SelectionPopupFrames > 0 {
 		g.SelectionPopupFrames--
-	}
-
-	g.enemyTimerFrameCounter++
-	if g.enemyTimerFrameCounter >= enemyTimerFrameDelay {
-		g.enemyTimerFrameCounter = 0
-
-		for _, enemy := range g.RoomEnemies {
-			if enemy == nil {
-				continue
-			}
-
-			basicEnemy, ok := enemy.(*BasicEnemy)
-			if !ok {
-				continue
-			}
-
-			if basicEnemy.attackCooldown <= 0 {
-				continue
-			}
-
-			basicEnemy.attackTimer--
-			if basicEnemy.attackTimer <= 0 {
-				if g.Train != nil {
-					g.Train.Health -= enemy.Attack()
-					if g.Train.Health < 0 {
-						g.Train.Health = 0
-					}
-				}
-
-				basicEnemy.attackTimer = basicEnemy.attackCooldown
-			}
-		}
 	}
 
 	for _, window := range g.windows {
@@ -190,7 +159,10 @@ func (g *Game) syncSelectedRoom() {
 		g.SelectedRoom = len(g.RoomEnemies) - 1
 	}
 
-	g.Enemy = g.RoomEnemies[g.SelectedRoom]
+	selectedEnemy := g.RoomEnemies[g.SelectedRoom]
+	if selectedEnemy != nil {
+		g.Enemy = selectedEnemy
+	}
 }
 
 func (g *Game) SelectRoom(roomIndex int) {

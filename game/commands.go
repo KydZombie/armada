@@ -44,6 +44,14 @@ func registerCombatCommands(db *core.CommandDB[Game]) {
 	db.RegisterCommand(core.Command[Game]{
 		Name: "attack",
 		OnRun: func(args []string, game *Game) (string, bool) {
+			if game.PlayerWeapon.CooldownRemaining > 0 {
+				return fmt.Sprintf(
+					"%s is on cooldown for %d more turn(s).",
+					game.PlayerWeapon.Name,
+					game.PlayerWeapon.CooldownRemaining,
+				), false
+			}
+
 			if game.Enemy == nil {
 				return "There is no enemy to attack.", false
 			}
@@ -76,6 +84,8 @@ func registerCombatCommands(db *core.CommandDB[Game]) {
 						part.Health = 0
 					}
 
+					game.PlayerWeapon.TriggerCooldown()
+
 					return fmt.Sprintf(
 						"%s's %s takes %d dmg. %s HP: %d/%d",
 						game.Enemy.Name(),
@@ -91,6 +101,7 @@ func registerCombatCommands(db *core.CommandDB[Game]) {
 			}
 
 			game.Enemy.TakeDamage(damage)
+			game.PlayerWeapon.TriggerCooldown()
 
 			if game.Enemy.Alive() {
 				return fmt.Sprintf(
@@ -201,8 +212,7 @@ func registerCombatCommands(db *core.CommandDB[Game]) {
 				return "That target is out of range.", false
 			}
 
-			//game.SelectedEnemyIndex = targetIndex
-			//game.syncSelectedEnemy()
+			game.SelectRoom(targetIndex)
 			game.SelectionPopupText = fmt.Sprintf("Selected: [%s]", strings.ToUpper(targetLabel))
 			game.SelectionPopupFrames = 120
 
