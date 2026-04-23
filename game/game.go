@@ -31,7 +31,7 @@ func NewGameScreen(gm *core.GameManager) *Game {
 
 	gs := &Game{
 		Train:        train,
-		PlayerWeapon: NewWeapon("Cannon", 1),
+		PlayerWeapon: NewWeapon("Cannon", 1, 1),
 		RoomEnemies:  roomEnemies,
 		Enemies:      roomEnemies,
 		SelectedRoom: 0,
@@ -160,9 +160,7 @@ func (g *Game) syncSelectedRoom() {
 	}
 
 	selectedEnemy := g.RoomEnemies[g.SelectedRoom]
-	if selectedEnemy != nil {
-		g.Enemy = selectedEnemy
-	}
+	g.Enemy = selectedEnemy
 }
 
 func (g *Game) SelectRoom(roomIndex int) {

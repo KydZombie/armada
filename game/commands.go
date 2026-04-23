@@ -44,82 +44,12 @@ func registerCombatCommands(db *core.CommandDB[Game]) {
 	db.RegisterCommand(core.Command[Game]{
 		Name: "attack",
 		OnRun: func(args []string, game *Game) (string, bool) {
-			if game.PlayerWeapon.CooldownRemaining > 0 {
-				return fmt.Sprintf(
-					"%s is on cooldown for %d more turn(s).",
-					game.PlayerWeapon.Name,
-					game.PlayerWeapon.CooldownRemaining,
-				), false
-			}
-
-			if game.Enemy == nil {
-				return "There is no enemy to attack.", false
-			}
-
-			if !game.Enemy.Alive() {
-				return fmt.Sprintf("%s is already defeated.", game.Enemy.Name()), false
-			}
-
-			damage := 1
-
+			targetPart := ""
 			if len(args) > 0 {
-				enemy, ok := game.Enemy.(*BasicEnemy)
-				if !ok {
-					return "Enemy parts are not available.", false
-				}
-
-				targetName := args[0]
-				for i := range enemy.Parts {
-					part := enemy.Parts[i]
-					if part == nil {
-						continue
-					}
-
-					if !strings.EqualFold(part.Name, targetName) {
-						continue
-					}
-
-					part.Health -= damage
-					if part.Health < 0 {
-						part.Health = 0
-					}
-
-					game.PlayerWeapon.TriggerCooldown()
-
-					return fmt.Sprintf(
-						"%s's %s takes %d dmg. %s HP: %d/%d",
-						game.Enemy.Name(),
-						part.Name,
-						damage,
-						part.Name,
-						part.Health,
-						part.MaxHealth,
-					), true
-				}
-
-				return "That part does not exist.", false
+				targetPart = args[0]
 			}
 
-			game.Enemy.TakeDamage(damage)
-			game.PlayerWeapon.TriggerCooldown()
-
-			if game.Enemy.Alive() {
-				return fmt.Sprintf(
-					"You attack %s for %d damage. %s has %d/%d health left.",
-					game.Enemy.Name(),
-					damage,
-					game.Enemy.Name(),
-					game.Enemy.Health(),
-					game.Enemy.MaxHealth(),
-				), true
-			}
-
-			return fmt.Sprintf(
-				"You attack %s for %d damage. %s is defeated.",
-				game.Enemy.Name(),
-				damage,
-				game.Enemy.Name(),
-			), true
+			return game.FireSelectedWeapon(targetPart)
 		},
 	})
 
