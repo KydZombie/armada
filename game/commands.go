@@ -19,6 +19,20 @@ func initializeCommands() *core.CommandDB[Game] {
 	return db
 }
 
+func parseRoomIndex(arg string, roomCount int) (int, string, bool) {
+	roomRunes := []rune(arg)
+	if len(roomRunes) != 1 {
+		return 0, "Invalid room", false
+	}
+
+	roomIdx := int(roomRunes[0] - 'a')
+	if roomIdx < 0 || roomIdx >= roomCount {
+		return 0, "Invalid room", false
+	}
+
+	return roomIdx, "", true
+}
+
 func registerGenericCommands(db *core.CommandDB[Game]) {
 	// TODO: Need to be able to do more than just this
 	db.RegisterCommand(core.Command[Game]{
@@ -75,16 +89,9 @@ func registerUnitCommands(db *core.CommandDB[Game]) {
 				return "No character selected", false
 			}
 
-			roomRunes := []rune(args[0])
-			if len(roomRunes) != 1 {
-				return "Invalid room", false
-			}
-
-			roomRune := roomRunes[0]
-			roomIdx := int(roomRune - 'a')
-
-			if roomIdx < 0 || roomIdx >= len(game.Train.Rooms) {
-				return "Invalid room", false
+			roomIdx, errText, ok := parseRoomIndex(args[0], len(game.Train.Rooms))
+			if !ok {
+				return errText, false
 			}
 
 			room := game.Train.Rooms[roomIdx]
@@ -112,11 +119,8 @@ func registerUnitCommands(db *core.CommandDB[Game]) {
 }
 
 func registerCombatCommands(db *core.CommandDB[Game]) {
-	// attack is a very small prototype combat command.
-	// It always deals 1 damage to the current enemy so we can test
-	// terminal commands and battle window updates together.
-	db.RegisterCommand(core.Command[Game]{
-		Name: "attack",
+	attackEnemyCommand := core.Command[Game]{
+		Name: "attack_enemy",
 		OnRun: func(args []string, game *Game) (string, bool) {
 			if game.Enemy == nil {
 				return "There is no enemy to attack.", false
@@ -126,12 +130,12 @@ func registerCombatCommands(db *core.CommandDB[Game]) {
 				return fmt.Sprintf("%s is already defeated.", game.Enemy.Name()), false
 			}
 
-			damage := 1
+			damage := game.Train.TotalAttackPower()
 			game.Enemy.TakeDamage(damage)
 
 			if game.Enemy.Alive() {
 				return fmt.Sprintf(
-					"You attack %s for %d damage. %s has %d/%d health left.",
+					"You attack the %s for %d damage. %s has %d/%d health left.",
 					game.Enemy.Name(),
 					damage,
 					game.Enemy.Name(),
@@ -141,18 +145,23 @@ func registerCombatCommands(db *core.CommandDB[Game]) {
 			}
 
 			return fmt.Sprintf(
-				"You attack %s for %d damage. %s is defeated.",
+				"You attack the %s for %d damage. %s is defeated.",
 				game.Enemy.Name(),
 				damage,
 				game.Enemy.Name(),
 			), true
 		},
 		Description: []string{"Attack the current enemy."},
+	}
+	db.RegisterCommand(attackEnemyCommand)
+	db.RegisterCommand(core.Command[Game]{
+		Name:        "attack",
+		OnRun:       attackEnemyCommand.OnRun,
+		Description: []string{"Alias for attack_enemy."},
 	})
 
-	// status shows the current state of the enemy in the battle.
-	db.RegisterCommand(core.Command[Game]{
-		Name: "status",
+	enemyStatusCommand := core.Command[Game]{
+		Name: "enemy_status",
 		OnRun: func(args []string, game *Game) (string, bool) {
 			if game.Enemy == nil {
 				return "There is no enemy to inspect.", false
@@ -172,6 +181,94 @@ func registerCombatCommands(db *core.CommandDB[Game]) {
 			), true
 		},
 		Description: []string{"Get the status of the enemy."},
+	}
+	db.RegisterCommand(enemyStatusCommand)
+	db.RegisterCommand(core.Command[Game]{
+		Name:        "status",
+		OnRun:       enemyStatusCommand.OnRun,
+		Description: []string{"Alias for enemy_status."},
+	})
+	db.RegisterCommand(core.Command[Game]{
+		Name: "train_status",
+		OnRun: func(args []string, game *Game) (string, bool) {
+			lifeSupportText := "online"
+			if !game.Train.LifeSupportOperational() {
+				lifeSupportText = fmt.Sprintf("offline (%d dmg/tick)", game.Train.LifeSupportDamagePerTick())
+			}
+
+			return fmt.Sprintf(
+				"Train hull: %d/%d. Total damage: %d. Shields: %d. Evasion: %d%%. Medbay: %d HP/tick. Life Support: %s.",
+				game.Train.Health,
+				game.Train.MaxHealth,
+				game.Train.TotalAttackPower(),
+				game.Train.ShieldLayers(),
+				game.Train.EvasionChance(),
+				game.Train.MedbayHealingPerTick(),
+				lifeSupportText,
+			), true
+		},
+		Description: []string{"Get the status of the train hull and total damage."},
+	})
+
+	db.RegisterCommand(core.Command[Game]{
+		Name: "damage_train",
+		OnRun: func(args []string, game *Game) (string, bool) {
+			if len(args) != 1 {
+				return "Invalid number of arguments", false
+			}
+
+			damage, err := strconv.Atoi(args[0])
+			if err != nil || damage <= 0 {
+				return "Invalid damage amount", false
+			}
+
+			game.Train.Health -= damage
+			if game.Train.Health < 0 {
+				game.Train.Health = 0
+			}
+
+			return fmt.Sprintf(
+				"Train takes %d damage. Hull is now %d/%d.",
+				damage,
+				game.Train.Health,
+				game.Train.MaxHealth,
+			), true
+		},
+		Description: []string{"Damage the train hull.", "Takes arguments [amount]"},
+	})
+
+	db.RegisterCommand(core.Command[Game]{
+		Name: "damage_room",
+		OnRun: func(args []string, game *Game) (string, bool) {
+			if len(args) != 2 {
+				return "Invalid number of arguments", false
+			}
+
+			roomIdx, errText, ok := parseRoomIndex(args[0], len(game.Train.Rooms))
+			if !ok {
+				return errText, false
+			}
+
+			damage, err := strconv.Atoi(args[1])
+			if err != nil || damage <= 0 {
+				return "Invalid damage amount", false
+			}
+
+			room := &game.Train.Rooms[roomIdx]
+			room.Health -= damage
+			if room.Health < 0 {
+				room.Health = 0
+			}
+
+			return fmt.Sprintf(
+				"Room %c takes %d damage. Room health is now %d/%d.",
+				room.GetRune(),
+				damage,
+				room.Health,
+				room.MaxHealth,
+			), true
+		},
+		Description: []string{"Damage a train room.", "Takes arguments [room] and [amount]"},
 	})
 }
 

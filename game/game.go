@@ -13,11 +13,12 @@ type Game struct {
 	Terminal *Terminal
 
 	SelectedCharacterIndex int
+	crewSystemTickTimer    float32
 }
 
 func NewGameScreen(gm *core.GameManager) *Game {
 	train := NewTrain(100)
-	enemy := NewBasicEnemy("Training Drone", 20, 3)
+	enemy := NewBasicEnemy("Steel Matador", 20, 3)
 
 	gs := &Game{
 		Train: train,
@@ -29,6 +30,7 @@ func NewGameScreen(gm *core.GameManager) *Game {
 		},
 
 		SelectedCharacterIndex: -1,
+		crewSystemTickTimer:    0,
 	}
 
 	const windowMargin = 16.0
@@ -90,6 +92,8 @@ func (g *Game) UpdateScreen(gm *core.GameManager) {
 
 		window.UpdateWindow(gm, g)
 	}
+
+	g.updateCrewSystems()
 }
 
 func (g *Game) DrawScreen(gm *core.GameManager) {
@@ -125,5 +129,34 @@ func (g *Game) DrawScreenUI(gm *core.GameManager) {
 func (g *Game) UpdateWindowSizes(gm *core.GameManager) {
 	for _, window := range g.windows {
 		window.UpdateWindowSize(gm)
+	}
+}
+
+func (g *Game) updateCrewSystems() {
+	healingPerTick := g.Train.MedbayHealingPerTick()
+	damagePerTick := g.Train.LifeSupportDamagePerTick()
+
+	g.crewSystemTickTimer += rl.GetFrameTime()
+	if g.crewSystemTickTimer < 1.0 {
+		return
+	}
+
+	g.crewSystemTickTimer = 0
+	for _, character := range g.Train.Characters {
+		room := g.Train.GetRoom(character.Pos.RoomId)
+
+		if room.System.Type == SystemMedbay && room.IsOperational() {
+			character.Health += healingPerTick
+			if character.Health > character.MaxHealth {
+				character.Health = character.MaxHealth
+			}
+		}
+
+		if damagePerTick > 0 {
+			character.Health -= damagePerTick
+			if character.Health < 0 {
+				character.Health = 0
+			}
+		}
 	}
 }

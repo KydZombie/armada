@@ -38,6 +38,10 @@ func (t TrainWindow) DrawWindow(gm *core.GameManager, state *Game) {
 
 	const tileSize float32 = 48.0
 	const roomBorderThickness float32 = 3.0
+	const roomLabelFontSize int32 = 24
+	const roomBarTextSize int32 = 14
+	const roomBarHeight float32 = 18
+	const roomBarSpacing float32 = 6
 
 	for _, room := range state.Train.Rooms {
 		roomBounds := rl.Rectangle{
@@ -114,7 +118,46 @@ func (t TrainWindow) DrawWindow(gm *core.GameManager, state *Game) {
 			rl.DrawRectangleRec(doorBounds, rl.Orange)
 		}
 
-		rl.DrawText(string([]rune{room.GetRune()}), int32(roomBounds.X)+4, int32(roomBounds.Y)+4, 24, rl.Black)
+		labelY := roomBounds.Y + 4
+		rl.DrawText(string([]rune{room.GetRune()}), int32(roomBounds.X)+4, int32(labelY), roomLabelFontSize, rl.Black)
+		rl.DrawText(room.System.ShortName(), int32(roomBounds.X)+28, int32(labelY)+4, 14, rl.DarkBlue)
+
+		barWidth := roomBounds.Width - 8
+		barX := roomBounds.X + 4
+		healthBarY := roomBounds.Y + roomBounds.Height + 6
+		damageBarY := healthBarY + roomBarHeight + roomBarSpacing
+		maxDamageDisplay := room.AttackPower
+		if maxDamageDisplay < 5 {
+			maxDamageDisplay = 5
+		}
+
+		drawStatBar(
+			rl.Rectangle{
+				X:      barX,
+				Y:      healthBarY,
+				Width:  barWidth,
+				Height: roomBarHeight,
+			},
+			"HP",
+			room.Health,
+			room.MaxHealth,
+			rl.Red,
+			roomBarTextSize,
+		)
+
+		drawStatBar(
+			rl.Rectangle{
+				X:      barX,
+				Y:      damageBarY,
+				Width:  barWidth,
+				Height: roomBarHeight,
+			},
+			"DMG",
+			room.AttackPower,
+			maxDamageDisplay,
+			rl.Gold,
+			roomBarTextSize,
+		)
 	}
 }
 
