@@ -1,6 +1,8 @@
 package game
 
 import (
+	"strings"
+
 	"github.com/KydZombie/armada/core"
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
@@ -14,6 +16,7 @@ type Game struct {
 
 	SelectedCharacterIndex int
 	crewSystemTickTimer    float32
+	combatStatusLines      []string
 }
 
 func NewGameScreen(gm *core.GameManager) *Game {
@@ -31,6 +34,7 @@ func NewGameScreen(gm *core.GameManager) *Game {
 
 		SelectedCharacterIndex: -1,
 		crewSystemTickTimer:    0,
+		combatStatusLines:      []string{"No combat actions yet."},
 	}
 
 	const windowMargin = 16.0
@@ -83,6 +87,7 @@ func (g *Game) ResizeScreen(gm *core.GameManager) {
 
 func (g *Game) UpdateScreen(gm *core.GameManager) {
 	inputCaptured := false
+	deltaSeconds := rl.GetFrameTime()
 
 	for _, window := range g.windows {
 		// If a window captures the input, other windows should not read any input
@@ -93,6 +98,13 @@ func (g *Game) UpdateScreen(gm *core.GameManager) {
 		window.UpdateWindow(gm, g)
 	}
 
+	if g.Train.WeaponsOperational() {
+		g.Train.AdvanceWeaponCooldowns(deltaSeconds)
+	}
+	g.Train.UpdateCombatState(deltaSeconds)
+	if g.Enemy != nil {
+		g.Enemy.UpdateCombatState(deltaSeconds)
+	}
 	g.updateCrewSystems()
 }
 
@@ -105,24 +117,8 @@ func (g *Game) DrawScreen(gm *core.GameManager) {
 }
 
 func (g *Game) DrawScreenUI(gm *core.GameManager) {
-	//var buttonText string
-	//if g.moving {
-	//	buttonText = "Stop moving"
-	//} else {
-	//	buttonText = "Start moving"
-	//}
-	//
-	//if rg.Button(rl.Rectangle{
-	//	X:      0,
-	//	Y:      50,
-	//	Width:  100,
-	//	Height: 60,
-	//}, buttonText) {
-	//	g.moving = !g.moving
-	//}
-
 	for _, window := range g.windows {
-		window.DrawWindow(gm, g)
+		window.DrawWindowUI(gm, g)
 	}
 }
 
@@ -143,7 +139,10 @@ func (g *Game) updateCrewSystems() {
 
 	g.crewSystemTickTimer = 0
 	for _, character := range g.Train.Characters {
-		room := g.Train.GetRoom(character.Pos.RoomId)
+		room, ok := g.Train.GetRoom(character.Pos.RoomId)
+		if !ok {
+			continue
+		}
 
 		if room.System.Type == SystemMedbay && room.IsOperational() {
 			character.Health += healingPerTick
@@ -158,5 +157,19 @@ func (g *Game) updateCrewSystems() {
 				character.Health = 0
 			}
 		}
+	}
+}
+
+func (g *Game) SetCombatStatus(lines ...string) {
+	g.combatStatusLines = g.combatStatusLines[:0]
+	for _, line := range lines {
+		if strings.TrimSpace(line) == "" {
+			continue
+		}
+		g.combatStatusLines = append(g.combatStatusLines, line)
+	}
+
+	if len(g.combatStatusLines) == 0 {
+		g.combatStatusLines = []string{"No combat actions yet."}
 	}
 }

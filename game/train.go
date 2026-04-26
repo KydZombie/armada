@@ -1,6 +1,8 @@
 package game
 
 import (
+	"math/rand"
+
 	"github.com/KydZombie/armada/core"
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
@@ -17,6 +19,19 @@ type Room struct {
 	Doors []Door
 
 	System ShipSystem
+}
+
+func (r *Room) ApplyDamage(amount int) int {
+	if amount <= 0 {
+		return 0
+	}
+
+	r.Health -= amount
+	if r.Health < 0 {
+		r.Health = 0
+	}
+
+	return amount
 }
 
 func (room *Room) GetRune() rune {
@@ -49,6 +64,10 @@ type Train struct {
 	Health, MaxHealth int
 	Rooms             []Room
 	Characters        []*Character
+	Weapons           []Weapon
+
+	shieldLayers            int
+	shieldRechargeRemaining float32
 }
 
 func NewTrain(health int) *Train {
@@ -57,6 +76,7 @@ func NewTrain(health int) *Train {
 		MaxHealth:  health,
 		Rooms:      make([]Room, 0),
 		Characters: make([]*Character, 0),
+		Weapons:    []Weapon{NewCannon("cannon"), NewMissile("missile")},
 	}
 
 	train.addRoom(Room{
@@ -185,7 +205,7 @@ func NewTrain(health int) *Train {
 				Y:      1,
 				Facing: core.FacingRight,
 				GoesToRoom: RoomPos{
-					RoomId: 3,
+					RoomId: 4,
 					X:      0,
 					Y:      1,
 				},
@@ -257,6 +277,7 @@ func NewTrain(health int) *Train {
 
 	train.addCharacter(NewCharacter("John", 80, RoomPos{RoomId: 0, X: 0, Y: 0}))
 	train.addCharacter(NewCharacter("Mary", 60, RoomPos{RoomId: 1, X: 0, Y: 0}))
+	train.shieldLayers = train.maxShieldLayers()
 
 	return train
 }
@@ -266,8 +287,12 @@ func (t *Train) addRoom(room Room) {
 	t.Rooms = append(t.Rooms, room)
 }
 
-func (t *Train) GetRoom(roomId int) *Room {
-	return &t.Rooms[roomId]
+func (t *Train) GetRoom(roomId int) (*Room, bool) {
+	if roomId < 0 || roomId >= len(t.Rooms) {
+		return nil, false
+	}
+
+	return &t.Rooms[roomId], true
 }
 
 func (t *Train) addCharacter(character *Character) {
@@ -293,20 +318,100 @@ func (r *Room) IsOperational() bool {
 
 func (t *Train) TotalAttackPower() int {
 	total := 0
-	for _, room := range t.Rooms {
-		if room.System.Type == SystemWeapons && room.Health > 0 {
-			total += room.AttackPower
-		}
+	if !t.WeaponsOperational() {
+		return 0
 	}
 
-	if total == 0 {
-		return 1
+	for _, weapon := range t.Weapons {
+		if weapon.Ready() {
+			total += weapon.Damage
+		}
 	}
 
 	return total
 }
 
-func (t *Train) ShieldLayers() int {
+func (t *Train) UpdateCombatState(deltaSeconds float32) {
+	if deltaSeconds <= 0 {
+		return
+	}
+
+	maxLayers := t.maxShieldLayers()
+	if t.shieldLayers > maxLayers {
+		t.shieldLayers = maxLayers
+	}
+
+	if t.shieldLayers >= maxLayers {
+		t.shieldRechargeRemaining = 0
+		return
+	}
+
+	if maxLayers <= 0 {
+		t.shieldRechargeRemaining = 0
+		return
+	}
+
+	if t.shieldRechargeRemaining <= 0 {
+		t.shieldRechargeRemaining = 4
+	}
+
+	t.shieldRechargeRemaining -= deltaSeconds
+	for t.shieldRechargeRemaining <= 0 && t.shieldLayers < maxLayers {
+		t.shieldLayers++
+		if t.shieldLayers >= maxLayers {
+			t.shieldRechargeRemaining = 0
+			return
+		}
+		t.shieldRechargeRemaining += 4
+	}
+}
+
+func (t *Train) WeaponsOperational() bool {
+	for _, room := range t.Rooms {
+		if room.System.Type == SystemWeapons && room.IsOperational() {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (t *Train) AdvanceWeaponCooldowns(deltaSeconds float32) {
+	for i := range t.Weapons {
+		t.Weapons[i].AdvanceCooldown(deltaSeconds)
+	}
+}
+
+func (t *Train) GetWeaponByName(name string) (*Weapon, bool) {
+	for i := range t.Weapons {
+		if t.Weapons[i].Name == name {
+			return &t.Weapons[i], true
+		}
+	}
+
+	return nil, false
+}
+
+func (t *Train) ReadyWeapons() int {
+	ready := 0
+	for _, weapon := range t.Weapons {
+		if weapon.Ready() {
+			ready++
+		}
+	}
+
+	return ready
+}
+
+func (t *Train) ApplyRoomDamage(roomID int, amount int) int {
+	if roomID < 0 || roomID >= len(t.Rooms) {
+		return 0
+	}
+
+	return t.Rooms[roomID].ApplyDamage(amount)
+}
+
+func (t *Train) maxShieldLayers() int {
 	layers := 0
 	for _, room := range t.Rooms {
 		if room.System.Type != SystemShields || !room.IsOperational() {
@@ -319,6 +424,15 @@ func (t *Train) ShieldLayers() int {
 	}
 
 	return layers
+}
+
+func (t *Train) ShieldLayers() int {
+	maxLayers := t.maxShieldLayers()
+	if t.shieldLayers > maxLayers {
+		return maxLayers
+	}
+
+	return t.shieldLayers
 }
 
 func (t *Train) EvasionChance() int {
@@ -388,5 +502,38 @@ func (t *Train) LifeSupportDamagePerTick() int {
 		return 0
 	}
 
-	return 1
+	return 0
+}
+
+func (t *Train) ApplyHullDamage(amount int) int {
+	if amount <= 0 {
+		return 0
+	}
+
+	t.Health -= amount
+	if t.Health < 0 {
+		t.Health = 0
+	}
+
+	return amount
+}
+
+func (t *Train) ResolveIncomingAttack(amount int) (hullDamage int, evaded bool, shielded bool) {
+	if amount <= 0 {
+		return 0, false, true
+	}
+
+	if chance := t.EvasionChance(); chance > 0 && rand.Intn(100) < chance {
+		return 0, true, false
+	}
+
+	if t.ShieldLayers() > 0 {
+		t.shieldLayers--
+		if t.shieldRechargeRemaining <= 0 {
+			t.shieldRechargeRemaining = 4
+		}
+		return 0, false, true
+	}
+
+	return t.ApplyHullDamage(amount), false, false
 }

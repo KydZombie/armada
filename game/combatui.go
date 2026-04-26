@@ -34,6 +34,7 @@ func drawStatBar(bounds rl.Rectangle, label string, value int, maxValue int, fil
 	rl.DrawRectangleLinesEx(bounds, 2, rl.White)
 
 	labelText := fmt.Sprintf("%s: %d/%d", label, value, maxValue)
+	textSize = fitTextSize(labelText, bounds.Width-8, textSize, 10)
 	textWidth := rl.MeasureText(labelText, textSize)
 	textX := int32(bounds.X + (bounds.Width-float32(textWidth))/2)
 	textY := int32(bounds.Y + (bounds.Height-float32(textSize))/2)

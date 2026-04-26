@@ -28,8 +28,6 @@ func (t TrainWindow) UpdateWindow(gm *core.GameManager, state *Game) {
 func (t TrainWindow) DrawWindow(gm *core.GameManager, state *Game) {
 	rl.DrawRectangleRec(t.GetBounds(), rl.Blue)
 
-	// TODO: Use sprites for train rendering
-
 	bounds := t.GetBounds()
 	trainOffset := rl.Vector2{
 		X: bounds.X + 16.0,
@@ -92,7 +90,7 @@ func (t TrainWindow) DrawWindow(gm *core.GameManager, state *Game) {
 
 		rl.DrawRectangleLinesEx(roomBounds, roomBorderThickness, rl.Black)
 		doorThickness := tileSize / 8
-		spaceAroundSideOfDoor := tileSize / 6 // Essentially inverse of door width
+		spaceAroundSideOfDoor := tileSize / 6
 		for _, door := range room.Doors {
 			var doorBounds rl.Rectangle
 			switch door.Facing {
@@ -131,6 +129,13 @@ func (t TrainWindow) DrawWindow(gm *core.GameManager, state *Game) {
 			maxDamageDisplay = 5
 		}
 
+		barLabel := "ATK"
+		barValue := room.AttackPower
+		if room.System.Type != SystemWeapons {
+			barLabel = "SYS"
+			barValue = 0
+		}
+
 		drawStatBar(
 			rl.Rectangle{
 				X:      barX,
@@ -152,8 +157,8 @@ func (t TrainWindow) DrawWindow(gm *core.GameManager, state *Game) {
 				Width:  barWidth,
 				Height: roomBarHeight,
 			},
-			"DMG",
-			room.AttackPower,
+			barLabel,
+			barValue,
 			maxDamageDisplay,
 			rl.Gold,
 			roomBarTextSize,

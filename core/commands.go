@@ -32,8 +32,12 @@ func (db *CommandDB[State]) RegisterCommand(command Command[State]) {
 
 // ParseAndRunCommand returns the result of the command as (output, success)
 func (db *CommandDB[State]) ParseAndRunCommand(fullCommand string, state *State) (string, bool) {
-	args := strings.Split(fullCommand, " ")
-	cmdName := args[0]
+	args := strings.Fields(fullCommand)
+	if len(args) == 0 {
+		return "", true
+	}
+
+	cmdName := strings.ToLower(args[0])
 	args = args[1:]
 
 	cmd, ok := db.CmdMap[cmdName]

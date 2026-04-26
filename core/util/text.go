@@ -10,6 +10,11 @@ func KeyToAlphanumeric(key int32) (rune, bool) {
 		return 'a' + (key - rl.KeyA), true
 	case key >= rl.KeyZero && key <= rl.KeyNine:
 		return '0' + (key - rl.KeyZero), true
+	case key == rl.KeyMinus:
+		if rl.IsKeyDown(rl.KeyLeftShift) || rl.IsKeyDown(rl.KeyRightShift) {
+			return '_', true
+		}
+		return '-', true
 	case key == rl.KeySpace:
 		return ' ', true
 	default:

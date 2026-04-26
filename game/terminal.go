@@ -6,7 +6,6 @@ import (
 	"unicode/utf8"
 
 	"github.com/KydZombie/armada/core"
-	"github.com/KydZombie/armada/core/util"
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
@@ -72,30 +71,36 @@ func (t *TerminalWindow) HandleInput(gm *core.GameManager, state *Game) bool {
 		return false
 	}
 
-	key := rl.GetKeyPressed()
-	if key == rl.KeyUp {
-		if t.currentHistoryLine < int32(len(t.history)) {
-			t.currentHistoryLine++
-		}
-	} else if key == rl.KeyDown {
-		if t.currentHistoryLine > 0 {
-			t.currentHistoryLine--
-		}
-	} else if key == rl.KeyEnter {
-		cmd := t.inputText.String()
-		t.handleCommand(gm, state, cmd)
-		t.inputText.Reset()
-	} else if key == rl.KeyBackspace {
-		if len(t.inputText.String()) > 0 {
-			curr := t.inputText.String()
+	for key := rl.GetKeyPressed(); key != 0; key = rl.GetKeyPressed() {
+		switch key {
+		case rl.KeyUp:
+			if t.currentHistoryLine < int32(len(t.history)) {
+				t.currentHistoryLine++
+			}
+		case rl.KeyDown:
+			if t.currentHistoryLine > 0 {
+				t.currentHistoryLine--
+			}
+		case rl.KeyEnter:
+			cmd := t.inputText.String()
+			t.handleCommand(gm, state, cmd)
 			t.inputText.Reset()
-			_, size := utf8.DecodeLastRuneInString(curr)
-			t.inputText.WriteString(curr[:len(curr)-size])
+		case rl.KeyBackspace:
+			if len(t.inputText.String()) > 0 {
+				curr := t.inputText.String()
+				t.inputText.Reset()
+				_, size := utf8.DecodeLastRuneInString(curr)
+				t.inputText.WriteString(curr[:len(curr)-size])
+			}
 		}
-	} else {
-		r, isRune := util.KeyToAlphanumeric(key)
-		if isRune {
-			t.inputText.WriteRune(r)
+	}
+
+	for char := rl.GetCharPressed(); char != 0; char = rl.GetCharPressed() {
+		switch {
+		case char >= 'A' && char <= 'Z':
+			t.inputText.WriteRune(char + ('a' - 'A'))
+		case char >= 32 && char <= 126:
+			t.inputText.WriteRune(char)
 		}
 	}
 
@@ -104,6 +109,81 @@ func (t *TerminalWindow) HandleInput(gm *core.GameManager, state *Game) bool {
 
 func (t *TerminalWindow) UpdateWindow(gm *core.GameManager, state *Game) {
 
+}
+
+func wrapTerminalLine(text string, maxWidth float32, fontSize int32) []string {
+	if text == "" {
+		return []string{""}
+	}
+
+	if maxWidth <= 0 {
+		return []string{text}
+	}
+
+	words := strings.Fields(text)
+	if len(words) == 0 {
+		return []string{text}
+	}
+
+	lines := make([]string, 0, len(words))
+	currentLine := ""
+
+	appendChunkedWord := func(word string) {
+		runes := []rune(word)
+		start := 0
+		for start < len(runes) {
+			end := start + 1
+			for end <= len(runes) {
+				chunk := string(runes[start:end])
+				if float32(rl.MeasureText(chunk, fontSize)) > maxWidth {
+					end--
+					break
+				}
+				end++
+			}
+
+			if end <= start {
+				end = start + 1
+			}
+
+			lines = append(lines, string(runes[start:end]))
+			start = end
+		}
+	}
+
+	for _, word := range words {
+		candidate := word
+		if currentLine != "" {
+			candidate = currentLine + " " + word
+		}
+
+		if float32(rl.MeasureText(candidate, fontSize)) <= maxWidth {
+			currentLine = candidate
+			continue
+		}
+
+		if currentLine != "" {
+			lines = append(lines, currentLine)
+			currentLine = ""
+		}
+
+		if float32(rl.MeasureText(word, fontSize)) <= maxWidth {
+			currentLine = word
+			continue
+		}
+
+		appendChunkedWord(word)
+	}
+
+	if currentLine != "" {
+		lines = append(lines, currentLine)
+	}
+
+	if len(lines) == 0 {
+		return []string{text}
+	}
+
+	return lines
 }
 
 func (t *TerminalWindow) DrawWindow(gm *core.GameManager, state *Game) {
@@ -117,18 +197,19 @@ func (t *TerminalWindow) DrawWindow(gm *core.GameManager, state *Game) {
 	bounds := t.GetBounds()
 	offsetX := int32(bounds.X) + innerOffset
 	offsetY := int32(bounds.Y) + innerOffset
+	contentWidth := bounds.Width - float32(innerOffset*2)
 
 	rl.DrawRectangleRec(bounds, rl.Black)
-	rl.DrawText(fmt.Sprint("> ", t.inputText.String()), offsetX, offsetY, fontSize, rl.White)
+	rl.BeginScissorMode(int32(bounds.X), int32(bounds.Y), int32(bounds.Width), int32(bounds.Height))
 
-	spaceToShowHistory := bounds.Height - float32(innerOffset) - float32(fontSize)
-	maxLinesToShow := int32(spaceToShowHistory / float32(fontSize))
-	for i := range maxLinesToShow {
-		lineNumber := t.currentHistoryLine - 1 - i
-		if lineNumber >= int32(len(t.history)) || lineNumber < 0 {
-			break
-		}
+	inputLines := wrapTerminalLine(fmt.Sprint("> ", t.inputText.String()), contentWidth, fontSize)
+	for i, line := range inputLines {
+		rl.DrawText(line, offsetX, offsetY+int32(i)*fontSize, fontSize, rl.White)
+	}
 
+	maxVisibleHeight := int32(bounds.Height) - innerOffset
+	nextY := offsetY + int32(len(inputLines))*fontSize
+	for lineNumber := t.currentHistoryLine - 1; lineNumber >= 0 && nextY+fontSize <= maxVisibleHeight+int32(bounds.Y); lineNumber-- {
 		historyItem := t.history[lineNumber]
 		var color rl.Color
 		switch historyItem.historyType {
@@ -139,8 +220,18 @@ func (t *TerminalWindow) DrawWindow(gm *core.GameManager, state *Game) {
 		case ErrorMessageMessage:
 			color = rl.Red
 		}
-		rl.DrawText(historyItem.text, offsetX, offsetY+int32(i+1)*24, 24, color)
+
+		wrappedLines := wrapTerminalLine(historyItem.text, contentWidth, fontSize)
+		for _, line := range wrappedLines {
+			if nextY+fontSize > maxVisibleHeight+int32(bounds.Y) {
+				break
+			}
+			rl.DrawText(line, offsetX, nextY, fontSize, color)
+			nextY += fontSize
+		}
 	}
+
+	rl.EndScissorMode()
 }
 
 func (t *TerminalWindow) DrawWindowUI(gm *core.GameManager, state *Game) {
