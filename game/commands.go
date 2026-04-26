@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"sort"
 	"strconv"
+	"unicode"
 	"strings"
 
 	"github.com/KydZombie/armada/core"
@@ -363,24 +364,45 @@ func registerUnitCommands(db *core.CommandDB[Game]) {
 			room := game.Train.Rooms[roomIdx]
 
 			x, err := strconv.Atoi(args[1])
+			x -= 1
 			if err != nil || x < 0 || x >= room.Width {
-				return "Invalid x", false
+				return fmt.Sprintf("Invalid x (%s). X starts at 1.", args[1]), false
 			}
 			y, err := strconv.Atoi(args[2])
+			y -= 1
 			if err != nil || y < 0 || y >= room.Height {
-				return "Invalid y", false
+				return fmt.Sprintf("Invalid y (%s). Y starts at 1.", args[2]), false
 			}
 
 			character := game.Train.Characters[game.SelectedCharacterIndex]
-			character.Pos.RoomId = roomIdx
-			character.Pos.X = x
-			character.Pos.Y = y
+			path, err := game.Train.MoveCharacter(character, RoomPos{RoomId: roomIdx, X: x, Y: y})
+			if err != nil {
+				return err.Error(), false
+			}
 
 			game.SelectedCharacterIndex = -1
 
-			return fmt.Sprint("Moved ", character.Name), true
+			pathLabels := make([]string, 0, len(path))
+			for _, roomId := range path {
+				pathLabels = append(pathLabels, string(game.Train.Rooms[roomId].GetRune()))
+			}
+
+			// Debug: show animation path waypoints
+			debugPath := make([]string, 0)
+			for i, pos := range character.MovementPath {
+				debugPath = append(debugPath, fmt.Sprintf("%s(%d,%d)", string(game.Train.Rooms[pos.RoomId].GetRune()), pos.X+1, pos.Y+1))
+				if i < len(character.MovementPath)-1 {
+					debugPath = append(debugPath, "->")
+				}
+			}
+
+			if len(pathLabels) > 1 {
+				return fmt.Sprintf("Moved %s through %s. Path: %s", character.Name, strings.Join(pathLabels, " -> "), strings.Join(debugPath, "")), true
+			}
+
+			return fmt.Sprint("Moved ", character.Name, " within room ", pathLabels[0], ". Path: ", strings.Join(debugPath, ""), "."), true
 		},
-		Description: []string{"Move a character", "Takes arguments [room], [x], and [y]"},
+		Description: []string{"Move a character", "Takes arguments [room], [x], and [y] (x and y start at 1)"},
 	})
 }
 

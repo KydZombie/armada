@@ -108,6 +108,9 @@ func (g *Game) UpdateScreen(gm *core.GameManager) {
 		g.Enemy.UpdateCombatState(deltaSeconds)
 	}
 	g.updateCrewSystems()
+
+	// Update character animations
+	g.Train.UpdateCharacterAnimations(rl.GetFrameTime())
 }
 
 func (g *Game) DrawScreen(gm *core.GameManager) {
