@@ -357,7 +357,7 @@ func (t *Train) MoveCharacter(character *Character, target RoomPos) ([]int, erro
 		return nil, fmt.Errorf("invalid room")
 	}
 
-	targetRoom := t.GetRoom(target.RoomId)
+	targetRoom, _ := t.GetRoom(target.RoomId)
 	if !targetRoom.HasTile(target.X, target.Y) {
 		return nil, fmt.Errorf("invalid destination tile")
 	}
@@ -383,7 +383,7 @@ func (t *Train) MoveCharacter(character *Character, target RoomPos) ([]int, erro
 		currentRoomId := path[i]
 		nextRoomId := path[i+1]
 
-		currentRoom := t.GetRoom(currentRoomId)
+		currentRoom, _ := t.GetRoom(currentRoomId)
 		door := currentRoom.GetDoorTo(nextRoomId)
 		if door == nil {
 			return nil, fmt.Errorf("no door found between rooms")
@@ -402,7 +402,7 @@ func (t *Train) MoveCharacter(character *Character, target RoomPos) ([]int, erro
 
 	for i := 1; i < len(animationPath); i++ {
 		if blockingCharacter, ok := t.GetCharacterAtRoomPos(animationPath[i], character); ok {
-			blockingRoom := t.GetRoom(animationPath[i].RoomId)
+			blockingRoom, _ := t.GetRoom(animationPath[i].RoomId)
 			return nil, fmt.Errorf("%s is already occupying %s(%d,%d)", blockingCharacter.Name, string(blockingRoom.GetRune()), animationPath[i].X+1, animationPath[i].Y+1)
 		}
 	}

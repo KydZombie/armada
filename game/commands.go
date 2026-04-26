@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"sort"
 	"strconv"
-	"unicode"
 	"strings"
 
 	"github.com/KydZombie/armada/core"

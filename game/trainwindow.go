@@ -139,20 +139,20 @@ func (t TrainWindow) roomTileWorldPosition(room Room, tileX, tileY int) rl.Vecto
 
 func (t TrainWindow) characterWorldPosition(state *Game, character *Character) rl.Vector2 {
 	if !character.IsMoving || len(character.MovementPath) == 0 {
-		room := state.Train.GetRoom(character.Pos.RoomId)
+		room, _ := state.Train.GetRoom(character.Pos.RoomId)
 		return t.roomTileWorldPosition(*room, character.Pos.X, character.Pos.Y)
 	}
 
 	if character.CurrentPathIndex >= len(character.MovementPath)-1 {
 		finalPos := character.MovementPath[len(character.MovementPath)-1]
-		room := state.Train.GetRoom(finalPos.RoomId)
+		room, _ := state.Train.GetRoom(finalPos.RoomId)
 		return t.roomTileWorldPosition(*room, finalPos.X, finalPos.Y)
 	}
 
 	currentPos := character.MovementPath[character.CurrentPathIndex]
 	nextPos := character.MovementPath[character.CurrentPathIndex+1]
-	currentRoom := state.Train.GetRoom(currentPos.RoomId)
-	nextRoom := state.Train.GetRoom(nextPos.RoomId)
+	currentRoom, _ := state.Train.GetRoom(currentPos.RoomId)
+	nextRoom, _ := state.Train.GetRoom(nextPos.RoomId)
 
 	currentWorld := t.roomTileWorldPosition(*currentRoom, currentPos.X, currentPos.Y)
 	nextWorld := t.roomTileWorldPosition(*nextRoom, nextPos.X, nextPos.Y)
