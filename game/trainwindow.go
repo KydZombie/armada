@@ -9,11 +9,15 @@ import (
 
 type TrainWindow struct {
 	core.BaseWindow[Game]
+
+	trainTexture rl.Texture2D
 }
 
 func NewTrainWindow(sizeFunc func(gm *core.GameManager) rl.Rectangle, gm *core.GameManager) *TrainWindow {
 	return &TrainWindow{
 		BaseWindow: core.NewBaseWindow[Game](sizeFunc, gm, true),
+
+		trainTexture: rl.LoadTexture("assets/train.png"),
 	}
 }
 
@@ -193,6 +197,28 @@ func (t TrainWindow) DrawWindow(gm *core.GameManager, state *Game) {
 	const roomBarTextSize int32 = 14
 	const roomBarHeight float32 = 18
 	const roomBarSpacing float32 = 6
+
+	offset := t.trainOffset()
+
+	sourceRec := rl.Rectangle{
+		X:      0,
+		Y:      0,
+		Width:  2800,
+		Height: 500,
+	}
+
+	destRec := rl.Rectangle{
+		X:      offset.X - 32,
+		Y:      offset.Y - 32,
+		Width:  550,
+		Height: 200,
+	}
+
+	rl.DrawTexturePro(t.trainTexture, sourceRec, destRec, rl.Vector2Zero(), 0, rl.White)
+
+	destRec.X += destRec.Width
+
+	rl.DrawTexturePro(t.trainTexture, sourceRec, destRec, rl.Vector2Zero(), 0, rl.White)
 
 	for roomIdx := 0; roomIdx < len(state.Train.Rooms)-1; roomIdx++ {
 		hallwayBounds, ok := t.hallwayBounds(state.Train.Rooms[roomIdx], state.Train.Rooms[roomIdx+1])
