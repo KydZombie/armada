@@ -26,7 +26,7 @@ func NewCannon(name string) Weapon {
 		Name:            name,
 		Type:            WeaponCannon,
 		Damage:          2,
-		CooldownSeconds: 2.0,
+		CooldownSeconds: 5.0,
 	}
 }
 
@@ -35,7 +35,7 @@ func NewMissile(name string) Weapon {
 		Name:            name,
 		Type:            WeaponMissile,
 		Damage:          3,
-		CooldownSeconds: 5.0,
+		CooldownSeconds: 10.0,
 		BypassesShields: true,
 	}
 }

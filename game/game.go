@@ -17,6 +17,8 @@ type Game struct {
 	SelectedCharacterIndex int
 	crewSystemTickTimer    float32
 	combatStatusLines      []string
+
+	SelectedWeaponIndex int
 }
 
 func NewGameScreen(gm *core.GameManager) *Game {

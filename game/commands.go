@@ -66,7 +66,7 @@ func commandCategory(name string) string {
 		return "Utility"
 	case "selc", "move":
 		return "Crew"
-	case "attackenemy", "attack", "atk", "enemystatus", "estatus", "status", "weapons", "fire", "trainstatus", "tstatus", "damagetrain", "dtrain", "dt", "damageroom", "droom", "dr", "damage":
+	case "attackenemy", "attack", "atk", "enemystatus", "estatus", "status", "selw", "weapons", "fire", "trainstatus", "tstatus", "damagetrain", "dtrain", "dt", "damageroom", "droom", "dr", "damage":
 		return "Combat"
 	default:
 		return "Other"
@@ -388,10 +388,15 @@ func registerCombatCommands(db *core.CommandDB[Game]) {
 	attackEnemyCommand := core.Command[Game]{
 		Name: "attackenemy",
 		OnRun: func(args []string, game *Game) (string, bool) {
-			weapon, ok := game.Train.GetWeaponByName("cannon")
-			if !ok {
-				return "No cannon is installed.", false
+			if game.SelectedWeaponIndex >= len(game.Train.Weapons) {
+				return "Invalid weapon selected", false
 			}
+			//weapon, ok := game.Train.GetWeaponByName("cannon")
+			//if !ok {
+			//	return "No cannon is installed.", false
+			//}
+
+			weapon := &game.Train.Weapons[game.SelectedWeaponIndex]
 
 			return resolvePlayerWeaponAttack(game, weapon, "hull")
 		},
@@ -509,6 +514,27 @@ func registerCombatCommands(db *core.CommandDB[Game]) {
 			}
 		},
 		Description: []string{"Damage train systems for testing.", "Examples: damage room a 2, damage train 5"},
+	})
+
+	db.RegisterCommand(core.Command[Game]{
+		Name: "selw",
+		OnRun: func(args []string, game *Game) (string, bool) {
+			if len(args) == 0 {
+				return "Must give weapon name", false
+			}
+
+			weaponName := args[0]
+
+			for i, weapon := range game.Train.Weapons {
+				if strings.Compare(weaponName, weapon.Name) == 0 {
+					game.SelectedWeaponIndex = i
+					return fmt.Sprint("Selected weapon ", weaponName), true
+				}
+			}
+
+			return fmt.Sprint("Couldn't find a weapon named ", weaponName), false
+		},
+		Description: []string{"Select weapon using its name."},
 	})
 }
 
