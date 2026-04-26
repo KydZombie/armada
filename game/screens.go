@@ -2,6 +2,7 @@ package game
 
 import (
 	"fmt"
+	"math"
 
 	"github.com/KydZombie/armada/core"
 	rl "github.com/gen2brain/raylib-go/raylib"
@@ -166,12 +167,52 @@ func NewSettingsScreen(currentScreen core.Screen) *SettingsScreen {
 
 func (s *SettingsScreen) ResizeScreen(gm *core.GameManager) {}
 
+func settingsPanelWidth(gm *core.GameManager) float32 {
+	width := float32(gm.ScreenWidth) * 0.5
+	if width < 360 {
+		width = 360
+	}
+	if width > 480 {
+		width = 480
+	}
+	return width
+}
+
+func settingsRowGap(gm *core.GameManager) float32 {
+	gap := (float32(gm.ScreenHeight) - 240) / 6
+	if gap < 64 {
+		gap = 64
+	}
+	if gap > 88 {
+		gap = 88
+	}
+	return gap
+}
+
+func settingsStartY(gm *core.GameManager, gap float32) float32 {
+	totalHeight := gap*5 + 54
+	centered := float32(gm.ScreenHeight)/2 - totalHeight/2
+	minY := float32(180)
+	maxY := float32(gm.ScreenHeight) - totalHeight - 72
+
+	if maxY < minY {
+		return maxY
+	}
+	if centered < minY {
+		return minY
+	}
+	if centered > maxY {
+		return maxY
+	}
+	return centered
+}
+
 func (s *SettingsScreen) sliderRect(gm *core.GameManager, index int) rl.Rectangle {
-	barWidth := float32(420)
+	barWidth := settingsPanelWidth(gm)
 	barHeight := float32(14)
+	rowGap := settingsRowGap(gm)
+	startY := settingsStartY(gm, rowGap)
 	startX := float32(gm.ScreenWidth)/2 - barWidth/2
-	startY := float32(gm.ScreenHeight)/2 - 110
-	rowGap := float32(92)
 
 	return rl.Rectangle{
 		X:      startX,
@@ -181,13 +222,57 @@ func (s *SettingsScreen) sliderRect(gm *core.GameManager, index int) rl.Rectangl
 	}
 }
 
-func (s *SettingsScreen) backButtonRect(gm *core.GameManager) rl.Rectangle {
+func (s *SettingsScreen) toggleRect(gm *core.GameManager, index int) rl.Rectangle {
+	barWidth := settingsPanelWidth(gm)
+	height := float32(46)
+	rowGap := settingsRowGap(gm)
+	startY := settingsStartY(gm, rowGap)
+	startX := float32(gm.ScreenWidth)/2 - barWidth/2
+
 	return rl.Rectangle{
-		X:      float32(gm.ScreenWidth)/2 - 170,
-		Y:      float32(gm.ScreenHeight) - 130,
-		Width:  340,
+		X:      startX,
+		Y:      startY + float32(3+index)*rowGap,
+		Width:  barWidth,
+		Height: height,
+	}
+}
+
+func (s *SettingsScreen) backButtonRect(gm *core.GameManager) rl.Rectangle {
+	barWidth := settingsPanelWidth(gm)
+	buttonWidth := barWidth * 0.8
+	if buttonWidth < 280 {
+		buttonWidth = 280
+	}
+	if buttonWidth > 340 {
+		buttonWidth = 340
+	}
+	gap := settingsRowGap(gm)
+	startY := settingsStartY(gm, gap)
+	return rl.Rectangle{
+		X:      float32(gm.ScreenWidth)/2 - buttonWidth/2,
+		Y:      startY + gap*5,
+		Width:  buttonWidth,
 		Height: 54,
 	}
+}
+
+func (s *SettingsScreen) toggleValue(gm *core.GameManager, index int) bool {
+	if index == 0 {
+		return gm.Fullscreen
+	}
+	return gm.VSync
+}
+
+func (s *SettingsScreen) setToggleValue(gm *core.GameManager, index int, enabled bool) {
+	if index == 0 {
+		gm.SetFullscreen(enabled)
+		return
+	}
+	gm.SetVSync(enabled)
+}
+
+func (s *SettingsScreen) flipToggleValue(gm *core.GameManager, index int) {
+	s.setToggleValue(gm, index, !s.toggleValue(gm, index))
 }
 
 func clampVolume(v float32) float32 {
@@ -200,8 +285,12 @@ func clampVolume(v float32) float32 {
 	return v
 }
 
+func quantizeVolume(v float32) float32 {
+	return clampVolume(float32(math.Round(float64(v*20)) / 20))
+}
+
 func sliderValueFromMouse(rect rl.Rectangle, mouseX float32) float32 {
-	return clampVolume((mouseX - rect.X) / rect.Width)
+	return quantizeVolume((mouseX - rect.X) / rect.Width)
 }
 
 func (s *SettingsScreen) getVolumeValue(gm *core.GameManager, index int) float32 {
@@ -229,8 +318,13 @@ func (s *SettingsScreen) setVolumeValue(gm *core.GameManager, index int, value f
 }
 
 func (s *SettingsScreen) UpdateScreen(gm *core.GameManager) {
-	labels := []string{"Master Volume", "Music Volume", "SFX Volume"}
-	maxRow := len(labels)
+	volumeLabels := []string{"Master Volume", "Music Volume", "SFX Volume"}
+	toggleLabels := []string{"Fullscreen", "VSync"}
+	volumeRowCount := len(volumeLabels)
+	toggleRowCount := len(toggleLabels)
+	backRow := volumeRowCount + toggleRowCount
+	maxRow := backRow
+	const keyboardVolumeStep = 0.05
 
 	if rl.IsKeyPressed(rl.KeyEscape) {
 		gm.SetScreen(s.previousScreen)
@@ -244,22 +338,35 @@ func (s *SettingsScreen) UpdateScreen(gm *core.GameManager) {
 		s.selectedRow = (s.selectedRow - 1 + (maxRow + 1)) % (maxRow + 1)
 	}
 
-	if s.selectedRow < maxRow {
-		if rl.IsKeyDown(rl.KeyRight) {
-			s.setVolumeValue(gm, s.selectedRow, s.getVolumeValue(gm, s.selectedRow)+0.01)
+	if s.selectedRow < volumeRowCount {
+		if rl.IsKeyPressed(rl.KeyRight) {
+			s.setVolumeValue(gm, s.selectedRow, quantizeVolume(s.getVolumeValue(gm, s.selectedRow)+keyboardVolumeStep))
 		}
-		if rl.IsKeyDown(rl.KeyLeft) {
-			s.setVolumeValue(gm, s.selectedRow, s.getVolumeValue(gm, s.selectedRow)-0.01)
+		if rl.IsKeyPressed(rl.KeyLeft) {
+			s.setVolumeValue(gm, s.selectedRow, quantizeVolume(s.getVolumeValue(gm, s.selectedRow)-keyboardVolumeStep))
 		}
 	}
 
-	if s.selectedRow == maxRow && (rl.IsKeyPressed(rl.KeyEnter) || rl.IsKeyPressed(rl.KeyKpEnter)) {
+	if s.selectedRow >= volumeRowCount && s.selectedRow < backRow {
+		toggleIndex := s.selectedRow - volumeRowCount
+		if rl.IsKeyPressed(rl.KeyLeft) {
+			s.setToggleValue(gm, toggleIndex, false)
+		}
+		if rl.IsKeyPressed(rl.KeyRight) {
+			s.setToggleValue(gm, toggleIndex, true)
+		}
+		if rl.IsKeyPressed(rl.KeyEnter) || rl.IsKeyPressed(rl.KeyKpEnter) {
+			s.flipToggleValue(gm, toggleIndex)
+		}
+	}
+
+	if s.selectedRow == backRow && (rl.IsKeyPressed(rl.KeyEnter) || rl.IsKeyPressed(rl.KeyKpEnter)) {
 		gm.SetScreen(s.previousScreen)
 		return
 	}
 
 	mousePos := rl.GetMousePosition()
-	for i := range labels {
+	for i := range volumeLabels {
 		sliderRect := s.sliderRect(gm, i)
 		hitRect := rl.Rectangle{
 			X:      sliderRect.X,
@@ -278,7 +385,17 @@ func (s *SettingsScreen) UpdateScreen(gm *core.GameManager) {
 		}
 	}
 
-	if rl.IsMouseButtonDown(rl.MouseLeftButton) && s.draggingSlider >= 0 && s.draggingSlider < maxRow {
+	for i := range toggleLabels {
+		rect := s.toggleRect(gm, i)
+		if rl.CheckCollisionPointRec(mousePos, rect) {
+			s.selectedRow = volumeRowCount + i
+			if rl.IsMouseButtonPressed(rl.MouseLeftButton) {
+				s.flipToggleValue(gm, i)
+			}
+		}
+	}
+
+	if rl.IsMouseButtonDown(rl.MouseLeftButton) && s.draggingSlider >= 0 && s.draggingSlider < volumeRowCount {
 		rect := s.sliderRect(gm, s.draggingSlider)
 		s.setVolumeValue(gm, s.draggingSlider, sliderValueFromMouse(rect, mousePos.X))
 	}
@@ -288,7 +405,7 @@ func (s *SettingsScreen) UpdateScreen(gm *core.GameManager) {
 
 	backRect := s.backButtonRect(gm)
 	if rl.CheckCollisionPointRec(mousePos, backRect) {
-		s.selectedRow = maxRow
+		s.selectedRow = backRow
 		if rl.IsMouseButtonPressed(rl.MouseLeftButton) {
 			gm.SetScreen(s.previousScreen)
 			return
@@ -303,8 +420,8 @@ func (s *SettingsScreen) DrawScreen(gm *core.GameManager) {
 	titleWidth := rl.MeasureText(title, 64)
 	rl.DrawText(title, gm.ScreenWidth/2-titleWidth/2, 72, 64, rl.Color{R: 230, G: 236, B: 247, A: 255})
 
-	labels := []string{"Master Volume", "Music Volume", "SFX Volume"}
-	for i, label := range labels {
+	volumeLabels := []string{"Master Volume", "Music Volume", "SFX Volume"}
+	for i, label := range volumeLabels {
 		rect := s.sliderRect(gm, i)
 		value := s.getVolumeValue(gm, i)
 		isSelected := s.selectedRow == i
@@ -327,14 +444,43 @@ func (s *SettingsScreen) DrawScreen(gm *core.GameManager) {
 		}
 		rl.DrawRectangleRounded(knobRect, 0.4, 6, knobColor)
 
-		percentText := fmt.Sprintf("%d%%", int32(value*100))
+		percentText := fmt.Sprintf("%d%%", int32(math.Round(float64(value*100))))
 		rl.DrawText(percentText, int32(rect.X+rect.Width+20), int32(rect.Y)-2, 24, rl.Color{R: 202, G: 214, B: 233, A: 255})
+	}
+
+	toggleLabels := []string{"Fullscreen", "VSync"}
+	for i, label := range toggleLabels {
+		rect := s.toggleRect(gm, i)
+		rowIndex := len(volumeLabels) + i
+		isSelected := s.selectedRow == rowIndex
+		enabled := s.toggleValue(gm, i)
+
+		rowColor := rl.Color{R: 31, G: 49, B: 73, A: 255}
+		textColor := rl.Color{R: 197, G: 209, B: 227, A: 255}
+		if isSelected {
+			rowColor = rl.Color{R: 60, G: 94, B: 135, A: 255}
+			textColor = rl.White
+		}
+
+		rl.DrawRectangleRounded(rect, 0.25, 8, rowColor)
+		rl.DrawRectangleLinesEx(rect, 2, rl.Color{R: 102, G: 137, B: 179, A: 255})
+		rl.DrawText(label, int32(rect.X+16), int32(rect.Y+10), 28, textColor)
+
+		stateText := "OFF"
+		stateColor := rl.Color{R: 194, G: 117, B: 117, A: 255}
+		if enabled {
+			stateText = "ON"
+			stateColor = rl.Color{R: 139, G: 214, B: 159, A: 255}
+		}
+
+		stateWidth := rl.MeasureText(stateText, 28)
+		rl.DrawText(stateText, int32(rect.X+rect.Width-float32(stateWidth)-18), int32(rect.Y+10), 28, stateColor)
 	}
 
 	backRect := s.backButtonRect(gm)
 	backColor := rl.Color{R: 34, G: 53, B: 79, A: 255}
 	backTextColor := rl.Color{R: 197, G: 209, B: 227, A: 255}
-	if s.selectedRow == len(labels) {
+	if s.selectedRow == len(volumeLabels)+len(toggleLabels) {
 		backColor = rl.Color{R: 65, G: 100, B: 143, A: 255}
 		backTextColor = rl.White
 	}
@@ -347,7 +493,7 @@ func (s *SettingsScreen) DrawScreen(gm *core.GameManager) {
 }
 
 func (s *SettingsScreen) DrawScreenUI(gm *core.GameManager) {
-	controls := "Keyboard: Up/Down + Left/Right + Enter | Mouse: Drag sliders + Click Back | Esc: Back"
+	controls := "Keyboard: Up/Down + Left/Right + Enter | Mouse: Drag sliders + Click toggles/back | Esc: Back"
 	controlsWidth := rl.MeasureText(controls, 20)
 	rl.DrawText(
 		controls,

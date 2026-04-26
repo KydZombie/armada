@@ -48,6 +48,40 @@ func (gm *GameManager) CreateRaylibWindow() {
 
 	rl.InitWindow(gm.Config.ScreenWidth, gm.Config.ScreenHeight, "Armada")
 	rl.SetTargetFPS(int32(rl.GetMonitorRefreshRate(rl.GetCurrentMonitor())))
+
+	if gm.Config.Fullscreen {
+		rl.ToggleBorderlessWindowed()
+		gm.ScreenWidth = int32(rl.GetScreenWidth())
+		gm.ScreenHeight = int32(rl.GetScreenHeight())
+	}
+}
+
+func (gm *GameManager) SetVSync(enabled bool) {
+	gm.VSync = enabled
+	if rl.IsWindowFullscreen() {
+		return
+	}
+	if enabled {
+		rl.SetWindowState(rl.FlagVsyncHint)
+	} else {
+		rl.ClearWindowState(rl.FlagVsyncHint)
+	}
+}
+
+func (gm *GameManager) SetFullscreen(enabled bool) {
+	if rl.IsWindowState(rl.FlagBorderlessWindowedMode) == enabled {
+		gm.Fullscreen = enabled
+		return
+	}
+
+	rl.ToggleBorderlessWindowed()
+	gm.Fullscreen = enabled
+	gm.ScreenWidth = int32(rl.GetScreenWidth())
+	gm.ScreenHeight = int32(rl.GetScreenHeight())
+
+	if gm.Screen != nil {
+		gm.Screen.ResizeScreen(gm)
+	}
 }
 
 func (gm *GameManager) SetScreen(screen Screen) {

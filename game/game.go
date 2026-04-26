@@ -90,6 +90,9 @@ func (g *Game) UpdateScreen(gm *core.GameManager) {
 
 		window.UpdateWindow(gm, g)
 	}
+
+	// Update character animations
+	g.Train.UpdateCharacterAnimations(rl.GetFrameTime())
 }
 
 func (g *Game) DrawScreen(gm *core.GameManager) {
@@ -118,7 +121,7 @@ func (g *Game) DrawScreenUI(gm *core.GameManager) {
 	//}
 
 	for _, window := range g.windows {
-		window.DrawWindow(gm, g)
+		window.DrawWindowUI(gm, g)
 	}
 }
 
