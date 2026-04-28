@@ -1,6 +1,7 @@
 package game
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/KydZombie/armada/core"
@@ -19,6 +20,10 @@ type Game struct {
 	combatStatusLines      []string
 
 	SelectedWeaponIndex int
+	SelectedTargetZone  HitZone
+	Wave                WaveState
+	ActiveThreats       []TrainThreat
+	nextThreatID        int
 }
 
 func NewGameScreen(gm *core.GameManager) *Game {
@@ -37,9 +42,16 @@ func NewGameScreen(gm *core.GameManager) *Game {
 		SelectedCharacterIndex: -1,
 		crewSystemTickTimer:    0,
 		combatStatusLines:      []string{"No combat actions yet."},
+		SelectedTargetZone:     ZoneCore,
+		ActiveThreats:          []TrainThreat{},
 	}
+	gs.startWave(1)
 
 	const windowMargin = 16.0
+	const rightColumnInset = 24.0
+	const missionExtraInset = 28.0
+	const missionWidthScale = 0.7
+	const trainMissionGap = 12.0
 
 	terminal := NewTerminalWindow(
 		func(gm *core.GameManager) rl.Rectangle {
@@ -58,10 +70,24 @@ func NewGameScreen(gm *core.GameManager) *Game {
 
 	gs.windows = append(gs.windows, NewTrainWindow(
 		func(gm *core.GameManager) rl.Rectangle {
+			missionWidth := (float32(gm.ScreenWidth)/2.0 - windowMargin*2 - rightColumnInset - missionExtraInset) * missionWidthScale
 			return rl.Rectangle{
 				X:      windowMargin,
 				Y:      windowMargin,
-				Width:  float32(gm.ScreenWidth) - windowMargin*2,
+				Width:  float32(gm.ScreenWidth) - windowMargin*2 - missionWidth - trainMissionGap,
+				Height: float32(gm.ScreenHeight)/2.0 - windowMargin,
+			}
+		},
+		gm,
+	))
+
+	gs.windows = append(gs.windows, NewMissionWindow(
+		func(gm *core.GameManager) rl.Rectangle {
+			missionWidth := (float32(gm.ScreenWidth)/2.0 - windowMargin*2 - rightColumnInset - missionExtraInset) * missionWidthScale
+			return rl.Rectangle{
+				X:      float32(gm.ScreenWidth) - windowMargin - missionWidth,
+				Y:      windowMargin,
+				Width:  missionWidth,
 				Height: float32(gm.ScreenHeight)/2.0 - windowMargin,
 			}
 		},
@@ -71,9 +97,9 @@ func NewGameScreen(gm *core.GameManager) *Game {
 	gs.windows = append(gs.windows, NewBattleWindow(
 		func(gm *core.GameManager) rl.Rectangle {
 			return rl.Rectangle{
-				X:      float32(gm.ScreenWidth)/2.0 + windowMargin,
+				X:      float32(gm.ScreenWidth)/2.0 + windowMargin + rightColumnInset,
 				Y:      float32(gm.ScreenHeight)/2.0 + windowMargin,
-				Width:  float32(gm.ScreenWidth)/2.0 - windowMargin*2,
+				Width:  float32(gm.ScreenWidth)/2.0 - windowMargin*2 - rightColumnInset,
 				Height: float32(gm.ScreenHeight)/2.0 - windowMargin*2,
 			}
 		},
@@ -108,6 +134,7 @@ func (g *Game) UpdateScreen(gm *core.GameManager) {
 		g.Enemy.UpdateCombatState(deltaSeconds)
 	}
 	g.updateCrewSystems()
+	g.updateWaveState(deltaSeconds)
 
 	// Update character animations
 	g.Train.UpdateCharacterAnimations(rl.GetFrameTime())
@@ -136,33 +163,96 @@ func (g *Game) UpdateWindowSizes(gm *core.GameManager) {
 func (g *Game) updateCrewSystems() {
 	healingPerTick := g.Train.MedbayHealingPerTick()
 	damagePerTick := g.Train.LifeSupportDamagePerTick()
+	crewCounts := g.stationedCrewCounts()
 
 	g.crewSystemTickTimer += rl.GetFrameTime()
-	if g.crewSystemTickTimer < 1.0 {
-		return
-	}
+	for g.crewSystemTickTimer >= 1.0 {
+		g.crewSystemTickTimer -= 1.0
 
-	g.crewSystemTickTimer = 0
+		for _, character := range g.Train.Characters {
+			room, ok := g.Train.GetRoom(character.Pos.RoomId)
+			if !ok {
+				continue
+			}
+
+			if character.IsMoving {
+				continue
+			}
+
+			if room.System.Type == SystemMedbay && room.IsOperational() {
+				character.Health += healingPerTick
+				if character.Health > character.MaxHealth {
+					character.Health = character.MaxHealth
+				}
+			}
+
+			if damagePerTick > 0 {
+				character.Health -= damagePerTick
+				if character.Health < 0 {
+					character.Health = 0
+				}
+			}
+		}
+
+		for roomID, crewSupport := range crewCounts {
+			effectiveSupport := crewSupport
+			if effectiveSupport > 2 {
+				effectiveSupport = 2
+			}
+
+			if g.resolveThreatInRoom(roomID, effectiveSupport) {
+				continue
+			}
+
+			room, ok := g.Train.GetRoom(roomID)
+			if !ok || room.Health >= room.MaxHealth {
+				continue
+			}
+
+			room.Health++
+			if room.Health > room.MaxHealth {
+				room.Health = room.MaxHealth
+			}
+		}
+	}
+}
+
+func (g *Game) stationedCrewCounts() map[int]int {
+	counts := make(map[int]int)
 	for _, character := range g.Train.Characters {
-		room, ok := g.Train.GetRoom(character.Pos.RoomId)
-		if !ok {
+		if character.IsMoving {
 			continue
 		}
 
-		if room.System.Type == SystemMedbay && room.IsOperational() {
-			character.Health += healingPerTick
-			if character.Health > character.MaxHealth {
-				character.Health = character.MaxHealth
-			}
+		counts[character.Pos.RoomId]++
+	}
+
+	return counts
+}
+
+func (g *Game) cartLabel(roomID int) string {
+	if roomID < 0 || roomID >= len(g.Train.Rooms) {
+		return "Cart ?"
+	}
+
+	return fmt.Sprintf("Cart %s", string(g.Train.Rooms[roomID].GetRune()))
+}
+
+func (g *Game) CrewSupportSummaryText() string {
+	parts := make([]string, 0, len(g.Train.Characters))
+	for _, character := range g.Train.Characters {
+		if character.IsMoving {
+			continue
 		}
 
-		if damagePerTick > 0 {
-			character.Health -= damagePerTick
-			if character.Health < 0 {
-				character.Health = 0
-			}
-		}
+		parts = append(parts, fmt.Sprintf("%s -> %s", character.Name, g.cartLabel(character.Pos.RoomId)))
 	}
+
+	if len(parts) == 0 {
+		return "none"
+	}
+
+	return strings.Join(parts, "  |  ")
 }
 
 func (g *Game) SetCombatStatus(lines ...string) {

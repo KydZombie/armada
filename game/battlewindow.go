@@ -1,9 +1,6 @@
 package game
 
 import (
-	"fmt"
-	"strings"
-
 	"github.com/KydZombie/armada/core"
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
@@ -82,110 +79,6 @@ func drawSectionHeader(bounds rl.Rectangle, title string, accent rl.Color) {
 	rl.DrawText(title, int32(bounds.X+12), int32(bounds.Y+8), fitTextSize(title, bounds.Width-24, 18, 14), rl.White)
 }
 
-func (b BattleWindow) drawWeaponStatusPanel(bounds rl.Rectangle, state *Game) {
-	drawPanelCard(bounds, battlePanelColor, rl.Fade(battleBorderColor, 0.85))
-
-	padding := float32(10)
-	headerBounds := rl.Rectangle{
-		X:      bounds.X + padding,
-		Y:      bounds.Y + padding,
-		Width:  bounds.Width - padding*2,
-		Height: 32,
-	}
-	drawSectionHeader(headerBounds, "Weapons", rl.Gold)
-
-	barY := headerBounds.Y + headerBounds.Height + 10
-	barHeight := float32(20)
-	for i, weapon := range state.Train.Weapons {
-		rowY := barY + float32(i)*34
-		statusColor := rl.Gold
-		currentValue := int(weapon.ChargeProgress() * 100)
-		maxValue := 100
-		label := weapon.Name
-		if weapon.Ready() {
-			currentValue = 100
-			statusColor = rl.Green
-			label = fmt.Sprintf("%s ready", weapon.Name)
-		} else {
-			label = fmt.Sprintf("%s charging %ds", weapon.Name, weapon.CooldownDisplaySeconds())
-		}
-
-		drawStatBar(
-			rl.Rectangle{
-				X:      bounds.X + padding,
-				Y:      rowY,
-				Width:  bounds.Width - padding*2,
-				Height: barHeight,
-			},
-			label,
-			currentValue,
-			maxValue,
-			statusColor,
-			14,
-		)
-	}
-}
-
-func (b BattleWindow) drawCombatStatusPanel(bounds rl.Rectangle, state *Game) {
-	drawPanelCard(bounds, battlePanelColor, rl.Fade(battleBorderColor, 0.85))
-
-	padding := float32(10)
-	headerBounds := rl.Rectangle{
-		X:      bounds.X + padding,
-		Y:      bounds.Y + padding,
-		Width:  bounds.Width - padding*2,
-		Height: 32,
-	}
-	drawSectionHeader(headerBounds, "Combat Feed", battleAccentColor)
-
-	contentBounds := rl.Rectangle{
-		X:      bounds.X + padding,
-		Y:      headerBounds.Y + headerBounds.Height + 10,
-		Width:  bounds.Width - padding*2,
-		Height: bounds.Height - (headerBounds.Height + padding*2 + 10),
-	}
-	drawPanelCard(contentBounds, rl.Fade(battleInsetColor, 0.92), rl.Fade(battleBorderColor, 0.45))
-
-	textX := int32(contentBounds.X + 12)
-	lineY := int32(contentBounds.Y + 12)
-	maxTextWidth := contentBounds.Width - 24
-	maxTextY := int32(contentBounds.Y + contentBounds.Height - 12)
-	for i, line := range state.combatStatusLines {
-		if i >= 4 {
-			break
-		}
-		color := rl.LightGray
-		bulletColor := rl.LightGray
-		if strings.Contains(line, "evades") {
-			color = rl.SkyBlue
-			bulletColor = rl.SkyBlue
-		} else if strings.Contains(line, "shields absorb") {
-			color = rl.Gold
-			bulletColor = rl.Gold
-		} else if strings.Contains(line, "shields and deals no hull damage") {
-			color = rl.Gold
-			bulletColor = rl.Gold
-		} else if strings.Contains(line, "attacks back") {
-			color = rl.Orange
-			bulletColor = rl.Orange
-		}
-
-		lineSize := fitTextSize(line, maxTextWidth, 16, 11)
-		wrappedLines := wrapTerminalLine(line, maxTextWidth-18, lineSize)
-		for j, wrappedLine := range wrappedLines {
-			if lineY+lineSize > maxTextY {
-				return
-			}
-			if j == 0 {
-				rl.DrawCircle(int32(contentBounds.X+20), lineY+lineSize/2, 4, bulletColor)
-			}
-			rl.DrawText(wrappedLine, textX+18, lineY, lineSize, color)
-			lineY += lineSize + 2
-		}
-		lineY += 6
-	}
-}
-
 func (b BattleWindow) drawEnemySidebar(sidebarBounds rl.Rectangle, snapshot combatantSnapshot) {
 	drawPanelCard(sidebarBounds, battlePanelColor, rl.Fade(battleBorderColor, 0.85))
 
@@ -209,7 +102,7 @@ func (b BattleWindow) drawEnemySidebar(sidebarBounds rl.Rectangle, snapshot comb
 	textX := int32(headerBounds.X + 12)
 	textY := int32(headerBounds.Y + 8)
 	textWidth := headerBounds.Width - 24
-	titleSize := fitTextSize(snapshot.Name, textWidth, 22, 12)
+	titleSize := fitTextSize(snapshot.Name, textWidth, 26, 14)
 	rl.DrawText(snapshot.Name, textX, textY, titleSize, rl.White)
 
 	statusText := "Status: Active"
@@ -219,7 +112,7 @@ func (b BattleWindow) drawEnemySidebar(sidebarBounds rl.Rectangle, snapshot comb
 		statusColor = rl.Yellow
 	}
 	statusY := textY + titleSize + 4
-	statusSize := fitTextSize(statusText, textWidth, 16, 11)
+	statusSize := fitTextSize(statusText, textWidth, 18, 12)
 	rl.DrawText(statusText, textX, statusY, statusSize, statusColor)
 
 	imageWidth := sidebarBounds.Width - padding*2
@@ -237,6 +130,22 @@ func (b BattleWindow) drawEnemySidebar(sidebarBounds rl.Rectangle, snapshot comb
 		Height: imageHeight,
 	}
 	drawPanelCard(imageBounds, rl.NewColor(34, 28, 30, 255), rl.Fade(battleEnemyGlowColor, 0.9))
+
+	textureWidth := float32(b.enemyTexture.Width)
+	textureHeight := float32(b.enemyTexture.Height)
+	drawBounds := imageBounds
+	if textureWidth > 0 && textureHeight > 0 {
+		textureAspect := textureWidth / textureHeight
+		boundsAspect := imageBounds.Width / imageBounds.Height
+		if textureAspect > boundsAspect {
+			drawBounds.Height = imageBounds.Width / textureAspect
+			drawBounds.Y = imageBounds.Y + (imageBounds.Height-drawBounds.Height)/2
+		} else {
+			drawBounds.Width = imageBounds.Height * textureAspect
+			drawBounds.X = imageBounds.X + (imageBounds.Width-drawBounds.Width)/2
+		}
+	}
+
 	rl.DrawTexturePro(
 		b.enemyTexture,
 		rl.Rectangle{
@@ -245,7 +154,7 @@ func (b BattleWindow) drawEnemySidebar(sidebarBounds rl.Rectangle, snapshot comb
 			Width:  float32(b.enemyTexture.Width),
 			Height: float32(b.enemyTexture.Height),
 		},
-		imageBounds,
+		drawBounds,
 		rl.Vector2{},
 		0,
 		rl.White,
@@ -273,7 +182,7 @@ func (b BattleWindow) drawEnemySidebar(sidebarBounds rl.Rectangle, snapshot comb
 		snapshot.Health,
 		snapshot.MaxHealth,
 		rl.Red,
-		16,
+		18,
 	)
 
 	damageBarY := healthBarY + barHeight + barGap
@@ -292,7 +201,7 @@ func (b BattleWindow) drawEnemySidebar(sidebarBounds rl.Rectangle, snapshot comb
 		snapshot.AttackPower,
 		maxDamageDisplay,
 		rl.Orange,
-		16,
+		18,
 	)
 
 	cooldownBarY := damageBarY + barHeight + barGap
@@ -307,7 +216,7 @@ func (b BattleWindow) drawEnemySidebar(sidebarBounds rl.Rectangle, snapshot comb
 		snapshot.ShieldLayers,
 		4,
 		rl.SkyBlue,
-		16,
+		18,
 	)
 }
 
@@ -317,107 +226,17 @@ func (b BattleWindow) DrawWindow(gm *core.GameManager, state *Game) {
 	rl.DrawRectangleLinesEx(bounds, 2, rl.Fade(battleBorderColor, 0.6))
 
 	padding := float32(12)
-	panelGap := float32(12)
-	sidebarWidth := bounds.Width * 0.28
-	contentWidth := bounds.Width - sidebarWidth - padding*3
-
-	infoPanel := rl.Rectangle{
+	enemyPanel := rl.Rectangle{
 		X:      bounds.X + padding,
 		Y:      bounds.Y + padding,
-		Width:  contentWidth,
+		Width:  bounds.Width - padding*2,
 		Height: bounds.Height - padding*2,
 	}
-	sidebarBounds := rl.Rectangle{
-		X:      infoPanel.X + infoPanel.Width + panelGap,
-		Y:      bounds.Y + padding,
-		Width:  sidebarWidth - panelGap,
-		Height: bounds.Height - padding*2,
-	}
-
-	drawPanelCard(infoPanel, battlePanelColor, rl.Fade(battleBorderColor, 0.85))
-
-	textX := int32(infoPanel.X + padding)
-	infoTextWidth := infoPanel.Width - padding*2
-	headerBounds := rl.Rectangle{
-		X:      infoPanel.X + padding,
-		Y:      infoPanel.Y + padding,
-		Width:  infoPanel.Width - padding*2,
-		Height: 78,
-	}
-	drawPanelCard(headerBounds, battleInsetColor, rl.Fade(battleAccentColor, 0.85))
-	rl.DrawText("Train Status", int32(headerBounds.X+12), int32(headerBounds.Y+8), fitTextSize("Train Status", headerBounds.Width-24, 20, 14), rl.White)
-
-	hullText := fmt.Sprintf("Hull %d/%d", state.Train.Health, state.Train.MaxHealth)
-	hullTextSize := drawFittedText(hullText, textX, int32(headerBounds.Y+32), infoTextWidth, 24, 14, rl.White)
-	readyDamageText := fmt.Sprintf("Ready Damage %d", state.Train.TotalAttackPower())
-	drawFittedText(readyDamageText, textX+220, int32(headerBounds.Y+32), infoTextWidth-220, 18, 12, rl.Gold)
-	defenseText := fmt.Sprintf("Shields %d   Evasion %d%%   Weapons %d/%d", state.Train.ShieldLayers(), state.Train.EvasionChance(), state.Train.ReadyWeapons(), len(state.Train.Weapons))
-	defenseY := int32(headerBounds.Y+32) + hullTextSize + 4
-	drawFittedText(defenseText, textX, defenseY, infoTextWidth, 17, 11, rl.Fade(rl.White, 0.9))
-
-	lifeSupportText := "Life Support: Online"
-	lifeSupportColor := rl.White
-	if !state.Train.LifeSupportOperational() {
-		lifeSupportText = fmt.Sprintf("Life Support: Offline (%d/tick)", state.Train.LifeSupportDamagePerTick())
-		lifeSupportColor = rl.Orange
-	}
-
-	auxBounds := rl.Rectangle{
-		X:      infoPanel.X + padding,
-		Y:      headerBounds.Y + headerBounds.Height + 10,
-		Width:  infoPanel.Width - padding*2,
-		Height: 54,
-	}
-	drawPanelCard(auxBounds, battleInsetColor, rl.Fade(battleBorderColor, 0.55))
-	medbayText := fmt.Sprintf("Medbay Heal %d/tick", state.Train.MedbayHealingPerTick())
-	drawFittedText(medbayText, int32(auxBounds.X+12), int32(auxBounds.Y+10), auxBounds.Width/2-16, 17, 11, rl.Green)
-	drawFittedText(lifeSupportText, int32(auxBounds.X+auxBounds.Width/2), int32(auxBounds.Y+10), auxBounds.Width/2-12, 17, 11, lifeSupportColor)
-
-	weaponPanelHeight := float32(46 + len(state.Train.Weapons)*34)
-	if weaponPanelHeight < 84 {
-		weaponPanelHeight = 84
-	}
-
-	combatPanelY := auxBounds.Y + auxBounds.Height + 10
-	minCombatPanelHeight := float32(84)
-	minGapBetweenPanels := float32(10)
-	maxWeaponPanelBottomY := infoPanel.Y + infoPanel.Height - 20
-	remainingPanelSpace := maxWeaponPanelBottomY - combatPanelY - minGapBetweenPanels
-	if remainingPanelSpace < minCombatPanelHeight+84 {
-		remainingPanelSpace = minCombatPanelHeight + 84
-	}
-
-	maxPreferredWeaponPanelHeight := remainingPanelSpace - minCombatPanelHeight
-	if weaponPanelHeight > maxPreferredWeaponPanelHeight {
-		weaponPanelHeight = maxPreferredWeaponPanelHeight
-	}
-	if weaponPanelHeight < 84 {
-		weaponPanelHeight = 84
-	}
-
-	weaponPanelY := maxWeaponPanelBottomY - weaponPanelHeight
-	combatPanel := rl.Rectangle{
-		X:      infoPanel.X + padding,
-		Y:      combatPanelY,
-		Width:  infoPanel.Width - padding*2,
-		Height: weaponPanelY - combatPanelY - minGapBetweenPanels,
-	}
-	if combatPanel.Height < minCombatPanelHeight {
-		combatPanel.Height = minCombatPanelHeight
-	}
-	b.drawCombatStatusPanel(combatPanel, state)
-
-	weaponPanel := rl.Rectangle{
-		X:      infoPanel.X + padding,
-		Y:      weaponPanelY,
-		Width:  infoPanel.Width - padding*2,
-		Height: weaponPanelHeight,
-	}
-	b.drawWeaponStatusPanel(weaponPanel, state)
 
 	if state.Enemy == nil {
-		noEnemyY := int32(combatPanel.Y + combatPanel.Height + 10)
-		drawFittedText("No enemy", textX, noEnemyY, infoTextWidth, 24, 14, rl.White)
+		drawPanelCard(enemyPanel, battlePanelColor, rl.Fade(battleBorderColor, 0.85))
+		drawFittedText("No enemy in range", int32(enemyPanel.X+12), int32(enemyPanel.Y+16), enemyPanel.Width-24, 28, 16, rl.White)
+		drawFittedText("Complete mission goals to spawn the next hostile.", int32(enemyPanel.X+12), int32(enemyPanel.Y+50), enemyPanel.Width-24, 16, 11, rl.LightGray)
 		return
 	}
 
@@ -429,7 +248,7 @@ func (b BattleWindow) DrawWindow(gm *core.GameManager, state *Game) {
 		AttackPower:  state.Enemy.Attack(),
 		Alive:        state.Enemy.Alive(),
 	}
-	b.drawEnemySidebar(sidebarBounds, enemySnapshot)
+	b.drawEnemySidebar(enemyPanel, enemySnapshot)
 }
 
 func (b BattleWindow) DrawWindowUI(gm *core.GameManager, state *Game) {

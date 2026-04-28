@@ -101,7 +101,7 @@ func parseDamageAmount(arg string) (int, string, bool) {
 
 func enemyStatusText(game *Game) (string, bool) {
 	if game.Enemy == nil {
-		return "There is no enemy to inspect.", false
+		return "There is no active enemy.", false
 	}
 
 	statusText := "alive"
@@ -110,12 +110,13 @@ func enemyStatusText(game *Game) (string, bool) {
 	}
 
 	return fmt.Sprintf(
-		"Enemy: %s. HP: %d/%d. Shields: %d. Status: %s.",
+		"Enemy: %s. HP: %d/%d. Shields: %d. Status: %s. Target zone: %s.",
 		game.Enemy.Name(),
 		game.Enemy.Health(),
 		game.Enemy.MaxHealth(),
 		game.Enemy.ShieldLayers(),
 		statusText,
+		strings.ToUpper(string(game.SelectedTargetZone)),
 	), true
 }
 
@@ -126,7 +127,7 @@ func trainStatusText(game *Game) (string, bool) {
 	}
 
 	return fmt.Sprintf(
-		"Train hull: %d/%d. Ready damage: %d. Shields: %d. Evasion: %d%%. Medbay: %d HP/tick. Life Support: %s. Weapons: %s.",
+		"Train hull: %d/%d. Ready damage: %d. Shields: %d. Evasion: %d%%. Medbay: %d HP/tick. Life Support: %s. Wave: %s. Cart damage: %s. Weapons: %s.",
 		game.Train.Health,
 		game.Train.MaxHealth,
 		game.Train.TotalAttackPower(),
@@ -134,15 +135,18 @@ func trainStatusText(game *Game) (string, bool) {
 		game.Train.EvasionChance(),
 		game.Train.MedbayHealingPerTick(),
 		lifeSupportText,
+		game.WaveSummaryText(),
+		game.ThreatSummaryText(),
 		weaponListText(game.Train),
 	), true
 }
 
 func weaponsStatusText(game *Game) (string, bool) {
 	return fmt.Sprintf(
-		"Weapons: %s. Weapons system: %t.",
+		"Weapons: %s. Weapons system: %t. Current target zone: %s.",
 		weaponListText(game.Train),
 		game.Train.WeaponsOperational(),
+		strings.ToUpper(string(game.SelectedTargetZone)),
 	), true
 }
 
@@ -214,19 +218,28 @@ func resolvePlayerWeaponAttack(game *Game, weapon *Weapon, target string) (strin
 		return combatFailure(game, fmt.Sprintf("%s is cooling down for %d more second(s).", weapon.Name, weapon.CooldownDisplaySeconds()))
 	}
 
-	_, targetHull, errText, ok := parseWeaponTarget(target, len(game.Train.Rooms))
+	zone, ok := parseHitZone(target)
 	if !ok {
-		return combatFailure(game, errText)
+		return combatFailure(game, "Target zone must be one of: head, core, legs")
 	}
 
 	var resultLines []string
 	var combatStatusLines []string
-	if targetHull {
-		damageApplied, shieldsAbsorbed := resolveEnemyWeaponHit(game.Enemy, weapon)
-		playerHitText := fmt.Sprintf("Your %s hits the %s hull for %d damage.", weapon.Name, game.Enemy.Name(), damageApplied)
+	if true {
+		weaponHit := *weapon
+		weaponHit.Damage = weaponDamageForZone(*weapon, zone)
+
+		damageApplied, shieldsAbsorbed := resolveEnemyWeaponHit(game.Enemy, &weaponHit)
+		playerHitText := fmt.Sprintf("Your %s hits %s zone for %d damage.", weapon.Name, strings.ToUpper(string(zone)), damageApplied)
 		if shieldsAbsorbed {
 			playerHitText = fmt.Sprintf("Your %s hits the %s shields and deals no hull damage.", weapon.Name, game.Enemy.Name())
 		}
+
+		preferredZone := weaponPreferredZone(*weapon)
+		if zone == preferredZone {
+			playerHitText += fmt.Sprintf(" (%s is most effective on %s)", weapon.Name, strings.ToUpper(string(preferredZone)))
+		}
+
 		resultLines = append(resultLines, playerHitText)
 		combatStatusLines = append(combatStatusLines, playerHitText)
 	}
@@ -259,6 +272,10 @@ func resolvePlayerWeaponAttack(game *Game, weapon *Weapon, target string) (strin
 	enemyDefeatedText := fmt.Sprintf("%s is defeated.", game.Enemy.Name())
 	resultLines = append(resultLines, enemyDefeatedText)
 	combatStatusLines = append(combatStatusLines, enemyDefeatedText)
+	game.registerEnemyKill()
+	if game.Wave.Active && game.Enemy != nil {
+		combatStatusLines = append(combatStatusLines, fmt.Sprintf("Next hostile approaching: %s.", game.Enemy.Name()))
+	}
 	game.SetCombatStatus(combatStatusLines...)
 	return strings.Join(resultLines, " "), true
 }
@@ -442,8 +459,8 @@ func registerCombatCommands(db *core.CommandDB[Game]) {
 	db.RegisterCommand(core.Command[Game]{
 		Name: "fire",
 		OnRun: func(args []string, game *Game) (string, bool) {
-			if len(args) != 2 {
-				return "fire takes arguments [weapon] and [target]", false
+			if len(args) < 1 || len(args) > 2 {
+				return "fire takes [weapon] and optional [zone]", false
 			}
 
 			weapon, ok := game.Train.GetWeaponByName(strings.ToLower(args[0]))
@@ -451,9 +468,33 @@ func registerCombatCommands(db *core.CommandDB[Game]) {
 				return fmt.Sprintf("Unknown weapon: %s.", args[0]), false
 			}
 
-			return resolvePlayerWeaponAttack(game, weapon, args[1])
+			targetZone := string(game.SelectedTargetZone)
+			if len(args) == 2 {
+				targetZone = args[1]
+			}
+
+			return resolvePlayerWeaponAttack(game, weapon, targetZone)
 		},
-		Description: []string{"Fire a weapon at the enemy hull.", "Examples: fire cannon hull, fire missile hull"},
+		Description: []string{"Fire a weapon at the selected zone.", "Examples: fire cannon, fire missile head"},
+	})
+	db.RegisterCommand(core.Command[Game]{
+		Name: "target",
+		OnRun: func(args []string, game *Game) (string, bool) {
+			if len(args) != 2 || strings.ToLower(args[0]) != "zone" {
+				return "target takes arguments: zone <head|core|legs>", false
+			}
+
+			zone, ok := parseHitZone(args[1])
+			if !ok {
+				return "zone must be one of: head, core, legs", false
+			}
+
+			game.SelectedTargetZone = zone
+			message := fmt.Sprintf("Target zone set to %s.", strings.ToUpper(string(zone)))
+			setCombatStatusMessage(game, message)
+			return message, true
+		},
+		Description: []string{"Set the active target zone.", "Example: target zone core"},
 	})
 	db.RegisterCommand(core.Command[Game]{
 		Name:        "trainstatus",
@@ -465,9 +506,6 @@ func registerCombatCommands(db *core.CommandDB[Game]) {
 		Name: "status",
 		OnRun: func(args []string, game *Game) (string, bool) {
 			if len(args) == 0 {
-				if game.Enemy != nil {
-					return enemyStatusText(game)
-				}
 				return trainStatusText(game)
 			}
 
@@ -478,11 +516,62 @@ func registerCombatCommands(db *core.CommandDB[Game]) {
 				return trainStatusText(game)
 			case "weapons", "weapon":
 				return weaponsStatusText(game)
+			case "combat", "wave":
+				return fmt.Sprintf("%s. Cart damage: %s. Target zone: %s.", game.WaveSummaryText(), game.ThreatSummaryText(), strings.ToUpper(string(game.SelectedTargetZone))), true
 			default:
-				return "status takes one of: enemy, train, weapons", false
+				return "status takes one of: enemy, train, weapons, combat", false
 			}
 		},
-		Description: []string{"Get combat/system status.", "Examples: status enemy, status train, status weapons"},
+		Description: []string{"Get combat/system status.", "Examples: status enemy, status train, status weapons, status combat"},
+	})
+
+	db.RegisterCommand(core.Command[Game]{
+		Name: "repair",
+		OnRun: func(args []string, game *Game) (string, bool) {
+			if len(args) != 1 {
+				return "repair takes one argument: [room]", false
+			}
+
+			roomIdx, errText, ok := parseRoomIndex(args[0], len(game.Train.Rooms))
+			if !ok {
+				return errText, false
+			}
+
+			if !game.crewInRoom(roomIdx) {
+				return fmt.Sprintf("No stationary crew in room %s.", strings.ToUpper(args[0])), false
+			}
+
+			crewSupport := 0
+			for _, character := range game.Train.Characters {
+				if character.IsMoving || character.Pos.RoomId != roomIdx {
+					continue
+				}
+				crewSupport++
+			}
+
+			if game.resolveThreatInRoom(roomIdx, crewSupport) {
+				roomRune := string(game.Train.Rooms[roomIdx].GetRune())
+				message := fmt.Sprintf("Repairs underway in cart %s. Cart damage: %s", roomRune, game.ThreatSummaryText())
+				setCombatStatusMessage(game, message)
+				return message, true
+			}
+
+			room := &game.Train.Rooms[roomIdx]
+			if room.Health >= room.MaxHealth {
+				return fmt.Sprintf("Room %s is already stable.", strings.ToUpper(args[0])), false
+			}
+
+			burstRepair := crewSupport * 2
+			room.Health += burstRepair
+			if room.Health > room.MaxHealth {
+				room.Health = room.MaxHealth
+			}
+
+			message := fmt.Sprintf("Crew repaired room %s by %d. Room health: %d/%d.", strings.ToUpper(args[0]), burstRepair, room.Health, room.MaxHealth)
+			setCombatStatusMessage(game, message)
+			return message, true
+		},
+		Description: []string{"Repair threats or damaged rooms where crew is present.", "Example: repair a"},
 	})
 
 	db.RegisterCommand(core.Command[Game]{

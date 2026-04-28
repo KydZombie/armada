@@ -268,7 +268,7 @@ func NewTrain(health int) *Train {
 
 	train.addRoom(Room{
 		Pos: rl.Vector2{
-			X: 19,
+			X: 20,
 			Y: 0,
 		},
 
@@ -400,10 +400,12 @@ func (t *Train) MoveCharacter(character *Character, target RoomPos) ([]int, erro
 		animationPath = append(animationPath, target)
 	}
 
-	for i := 1; i < len(animationPath); i++ {
-		if blockingCharacter, ok := t.GetCharacterAtRoomPos(animationPath[i], character); ok {
-			blockingRoom, _ := t.GetRoom(animationPath[i].RoomId)
-			return nil, fmt.Errorf("%s is already occupying %s(%d,%d)", blockingCharacter.Name, string(blockingRoom.GetRune()), animationPath[i].X+1, animationPath[i].Y+1)
+	// Only check final destination, allow crew to pass through each other during movement
+	if len(animationPath) > 0 {
+		finalTarget := animationPath[len(animationPath)-1]
+		if blockingCharacter, ok := t.GetCharacterAtRoomPos(finalTarget, character); ok {
+			blockingRoom, _ := t.GetRoom(finalTarget.RoomId)
+			return nil, fmt.Errorf("%s is already occupying %s(%d,%d)", blockingCharacter.Name, string(blockingRoom.GetRune()), finalTarget.X+1, finalTarget.Y+1)
 		}
 	}
 
@@ -438,10 +440,25 @@ func (t *Train) UpdateCharacterAnimations(deltaTime float32) {
 			continue
 		}
 
-		// Advance animation progress
-		// Calculate distance to next position in tiles
-		const distancePerStep float32 = 1.0
-		character.AnimationProgress += character.AnimationSpeed * deltaTime / distancePerStep
+		if character.CurrentPathIndex >= len(character.MovementPath)-1 {
+			character.Pos = character.MovementPath[len(character.MovementPath)-1]
+			character.IsMoving = false
+			character.MovementPath = make([]RoomPos, 0)
+			character.CurrentPathIndex = 0
+			character.AnimationProgress = 0
+			continue
+		}
+
+		currentPos := character.MovementPath[character.CurrentPathIndex]
+		nextPos := character.MovementPath[character.CurrentPathIndex+1]
+		segmentDistance := segmentDistance(currentPos, nextPos)
+		if segmentDistance <= 0 {
+			character.CurrentPathIndex++
+			character.AnimationProgress = 0
+			continue
+		}
+
+		character.AnimationProgress += character.AnimationSpeed * deltaTime / segmentDistance
 
 		if character.AnimationProgress >= 1.0 {
 			character.AnimationProgress = 0.0
@@ -476,35 +493,8 @@ func (character *Character) GetAnimatedPosition() RoomPos {
 		return nextPos
 	}
 
-	// Move orthogonally (X first, then Y) to avoid diagonal movement
-	moveX := nextPos.X - currentPos.X
-	moveY := nextPos.Y - currentPos.Y
-
-	// Determine which axis to move along first
-	animX := currentPos.X
-	animY := currentPos.Y
-
-	if moveX != 0 {
-		// Move along X axis first
-		if character.AnimationProgress < 0.5 {
-			// First half: move along X
-			xProgress := character.AnimationProgress * 2.0 // 0.0 to 1.0 for this half
-			animX = currentPos.X + int(float32(moveX)*xProgress)
-		} else {
-			// Second half: reached target X
-			animX = nextPos.X
-			// Move along Y in second half
-			if moveY != 0 {
-				yProgress := (character.AnimationProgress - 0.5) * 2.0 // 0.0 to 1.0 for second half
-				animY = currentPos.Y + int(float32(moveY)*yProgress)
-			} else {
-				animY = nextPos.Y
-			}
-		}
-	} else if moveY != 0 {
-		// Only Y moves
-		animY = currentPos.Y + int(float32(moveY)*character.AnimationProgress)
-	}
+	animX := lerpInt(currentPos.X, nextPos.X, character.AnimationProgress)
+	animY := lerpInt(currentPos.Y, nextPos.Y, character.AnimationProgress)
 
 	return RoomPos{
 		RoomId: currentPos.RoomId,

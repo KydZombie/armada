@@ -60,7 +60,28 @@ func (t TrainWindow) trainOffset() rl.Vector2 {
 }
 
 func (t TrainWindow) tileSize() float32 {
-	return 48.0
+	bounds := t.GetBounds()
+
+	// Fit the full train layout (about 22-23 tiles wide) inside current window width.
+	widthBudget := bounds.Width - 56
+	tileByWidth := widthBudget / 23.0
+
+	// Keep room bars and the bottom stats strip visible as well.
+	heightBudget := bounds.Height - 156
+	tileByHeight := heightBudget / 3.0
+
+	tile := float32(48.0)
+	if tileByWidth < tile {
+		tile = tileByWidth
+	}
+	if tileByHeight < tile {
+		tile = tileByHeight
+	}
+	if tile < 18 {
+		tile = 18
+	}
+
+	return tile
 }
 
 func (t TrainWindow) roomBounds(room Room) rl.Rectangle {
@@ -183,14 +204,16 @@ func (t TrainWindow) characterWorldPosition(state *Game, character *Character) r
 }
 
 func (t TrainWindow) DrawWindow(gm *core.GameManager, state *Game) {
-	rl.DrawRectangleRec(t.GetBounds(), rl.Blue)
+	bounds := t.GetBounds()
+	rl.DrawRectangleRec(bounds, rl.Blue)
+	rl.BeginScissorMode(int32(bounds.X), int32(bounds.Y), int32(bounds.Width), int32(bounds.Height))
 
 	// TODO: Use sprites for train rendering
 
 	tileSize := t.tileSize()
 	const roomBorderThickness float32 = 3.0
-	const roomLabelFontSize int32 = 24
-	const roomBarTextSize int32 = 14
+	const roomLabelFontSize int32 = 28
+	const roomBarTextSize int32 = 16
 	const roomBarHeight float32 = 18
 	const roomBarSpacing float32 = 6
 
@@ -200,8 +223,27 @@ func (t TrainWindow) DrawWindow(gm *core.GameManager, state *Game) {
 			continue
 		}
 
-		rl.DrawRectangleRec(hallwayBounds, rl.LightGray)
-		rl.DrawRectangleLinesEx(hallwayBounds, 2.0, rl.DarkGray)
+		hallwayCols := int(hallwayBounds.Width/tileSize + 0.5)
+		hallwayRows := int(hallwayBounds.Height/tileSize + 0.5)
+		if hallwayCols < 1 {
+			hallwayCols = 1
+		}
+		if hallwayRows < 1 {
+			hallwayRows = 1
+		}
+		for x := 0; x < hallwayCols; x++ {
+			for y := 0; y < hallwayRows; y++ {
+				tileBounds := rl.Rectangle{
+					X:      hallwayBounds.X + float32(x)*tileSize,
+					Y:      hallwayBounds.Y + float32(y)*tileSize,
+					Width:  tileSize,
+					Height: tileSize,
+				}
+				rl.DrawRectangleRec(tileBounds, rl.NewColor(215, 215, 205, 255))
+				rl.DrawRectangleLinesEx(tileBounds, 1.5, rl.DarkGray)
+			}
+		}
+		rl.DrawRectangleLinesEx(hallwayBounds, 2.0, rl.Black)
 	}
 
 	for _, room := range state.Train.Rooms {
@@ -249,7 +291,7 @@ func (t TrainWindow) DrawWindow(gm *core.GameManager, state *Game) {
 
 		labelY := roomBounds.Y + 4
 		rl.DrawText(string([]rune{room.GetRune()}), int32(roomBounds.X)+4, int32(labelY), roomLabelFontSize, rl.Black)
-		rl.DrawText(room.System.ShortName(), int32(roomBounds.X)+28, int32(labelY)+4, 14, rl.DarkBlue)
+		rl.DrawText(room.System.ShortName(), int32(roomBounds.X)+34, int32(labelY)+5, 16, rl.DarkBlue)
 
 		barWidth := roomBounds.Width - 8
 		barX := roomBounds.X + 4
@@ -307,7 +349,7 @@ func (t TrainWindow) DrawWindow(gm *core.GameManager, state *Game) {
 		}
 		rl.DrawCircleV(rl.Vector2AddValue(characterPos, tileSize/2), tileSize/3, renderColor)
 
-		const fontSize int32 = 16
+		const fontSize int32 = 18
 		text := fmt.Sprint(character.Id + 1)
 		textWidth := rl.MeasureText(text, fontSize)
 
@@ -319,6 +361,32 @@ func (t TrainWindow) DrawWindow(gm *core.GameManager, state *Game) {
 			rl.White,
 		)
 	}
+
+	statsHeight := float32(58)
+	statsBounds := rl.Rectangle{
+		X:      bounds.X + 8,
+		Y:      bounds.Y + bounds.Height - statsHeight - 8,
+		Width:  bounds.Width - 16,
+		Height: statsHeight,
+	}
+
+	rl.DrawRectangleRec(statsBounds, rl.Fade(rl.Black, 0.48))
+	rl.DrawRectangleLinesEx(statsBounds, 2, rl.Fade(rl.White, 0.35))
+
+	hullText := fmt.Sprintf("Hull %d/%d", state.Train.Health, state.Train.MaxHealth)
+	defenseText := fmt.Sprintf("Shields %d   Evasion %d%%   Weapons Ready %d/%d", state.Train.ShieldLayers(), state.Train.EvasionChance(), state.Train.ReadyWeapons(), len(state.Train.Weapons))
+	medbayText := fmt.Sprintf("Medbay +%d/tick", state.Train.MedbayHealingPerTick())
+	lifeSupportText := "Life Support online"
+	if !state.Train.LifeSupportOperational() {
+		lifeSupportText = fmt.Sprintf("Life Support offline (%d/tick)", state.Train.LifeSupportDamagePerTick())
+	}
+
+	rl.DrawText(hullText, int32(statsBounds.X+10), int32(statsBounds.Y+6), 22, rl.White)
+	rl.DrawText(defenseText, int32(statsBounds.X+200), int32(statsBounds.Y+9), 18, rl.LightGray)
+	rl.DrawText(medbayText, int32(statsBounds.X+10), int32(statsBounds.Y+32), 16, rl.Green)
+	rl.DrawText(lifeSupportText, int32(statsBounds.X+170), int32(statsBounds.Y+32), 16, rl.Orange)
+
+	rl.EndScissorMode()
 }
 
 func (t TrainWindow) DrawWindowUI(gm *core.GameManager, state *Game) {

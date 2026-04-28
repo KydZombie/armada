@@ -1,6 +1,10 @@
 package game
 
-import "github.com/KydZombie/armada/core"
+import (
+	"math"
+
+	"github.com/KydZombie/armada/core"
+)
 
 type Character struct {
 	Id int
@@ -30,6 +34,16 @@ func NewCharacter(name string, health int, pos RoomPos) *Character {
 		MovementPath:      make([]RoomPos, 0),
 		CurrentPathIndex:  0,
 		AnimationProgress: 0.0,
-		AnimationSpeed:    0.4, // 0.4 tiles per second
+		AnimationSpeed:    2.0, // tiles per second
 	}
+}
+
+func lerpInt(a int, b int, t float32) int {
+	return int(float32(a) + float32(b-a)*t)
+}
+
+func segmentDistance(a RoomPos, b RoomPos) float32 {
+	dx := float64(b.X - a.X)
+	dy := float64(b.Y - a.Y)
+	return float32(math.Sqrt(dx*dx + dy*dy))
 }
