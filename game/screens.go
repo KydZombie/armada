@@ -47,11 +47,8 @@ type MainMenuScreen struct {
 	selected int
 	hovered  int
 
-	font rl.Font
-
-	textureBackground rl.Texture2D
-	textureTitle      rl.Texture2D
-	textureOptions    rl.Texture2D
+	textureTitle   rl.Texture2D
+	textureOptions rl.Texture2D
 }
 
 func NewMainMenuScreen() *MainMenuScreen {
@@ -60,11 +57,8 @@ func NewMainMenuScreen() *MainMenuScreen {
 		selected: 0,
 		hovered:  -1,
 
-		font: rl.LoadFont("assets/doublehomicide.ttf"),
-
-		textureBackground: rl.LoadTexture("assets/background.png"),
-		textureOptions:    rl.LoadTexture("assets/main/options.png"),
-		textureTitle:      rl.LoadTexture("assets/main/title.png"),
+		textureOptions: rl.LoadTexture("assets/menus/main/options.png"),
+		textureTitle:   rl.LoadTexture("assets/menus/main/title.png"),
 	}
 }
 
@@ -147,9 +141,9 @@ func (s *MainMenuScreen) activateSelected(gm *core.GameManager) {
 }
 
 func (s *MainMenuScreen) DrawScreen(gm *core.GameManager) {
-	rl.DrawTexture(s.textureBackground, 0, 0, rl.Color{R: 120, G: 120, B: 120, A: 255})
+	rl.DrawTexture(gm.Textures["background"], 0, 0, rl.Color{R: 120, G: 120, B: 120, A: 255})
 
-	rl.DrawTexture(s.textureOptions, 0, 0, rl.White)
+	rl.DrawTexture(gm.Textures["optionsM"], 0, 0, rl.White)
 
 	rl.DrawCircleGradient(
 		0, 0,
@@ -176,7 +170,7 @@ func (s *MainMenuScreen) DrawScreen(gm *core.GameManager) {
 		rl.Color{R: 0, G: 0, B: 0, A: 0},
 	)
 
-	rl.DrawTexture(s.textureTitle, 0, 0, rl.White)
+	rl.DrawTexture(gm.Textures["titleM"], 0, 0, rl.White)
 
 	for i, option := range s.options {
 		rect := s.menuOptionRect(gm, i)
@@ -196,7 +190,7 @@ func (s *MainMenuScreen) DrawScreen(gm *core.GameManager) {
 
 		rl.DrawRectangleRec(rect, fillColor)
 
-		sizeOption := rl.MeasureTextEx(s.font, option, 50, 2)
+		sizeOption := rl.MeasureTextEx(gm.Fonts["dh"], option, 50, 2)
 
 		pos := rl.Vector2{
 			X: rect.X + rect.Width/2 - sizeOption.X/2,
@@ -204,7 +198,7 @@ func (s *MainMenuScreen) DrawScreen(gm *core.GameManager) {
 		}
 
 		DrawEngravedText(
-			s.font,
+			gm.Fonts["dh"],
 			option,
 			pos,
 			50,
@@ -219,10 +213,7 @@ type SettingsScreen struct {
 	selectedRow    int
 	draggingSlider int
 
-	font rl.Font
-
-	textureBackground rl.Texture2D
-	textureOptions    rl.Texture2D
+	textureBack rl.Texture2D
 }
 
 func NewSettingsScreen(currentScreen core.Screen) *SettingsScreen {
@@ -231,10 +222,7 @@ func NewSettingsScreen(currentScreen core.Screen) *SettingsScreen {
 		selectedRow:    0,
 		draggingSlider: -1,
 
-		font: rl.LoadFont("assets/doublehomicide.ttf"),
-
-		textureBackground: rl.LoadTexture("assets/background.png"),
-		textureOptions:    rl.LoadTexture("assets/settings/options.png"),
+		textureBack: rl.LoadTexture("assets/misc/back.png"),
 	}
 }
 
@@ -487,7 +475,9 @@ func (s *SettingsScreen) UpdateScreen(gm *core.GameManager) {
 }
 
 func (s *SettingsScreen) DrawScreen(gm *core.GameManager) {
-	rl.DrawTexture(s.textureBackground, 0, 0, rl.Color{R: 120, G: 120, B: 120, A: 255})
+	rl.DrawTexture(gm.Textures["background"], 0, 0, rl.Color{R: 120, G: 120, B: 120, A: 255})
+
+	rl.DrawTexture(gm.Textures["back"], 0, 0, rl.White)
 
 	rl.DrawCircleGradient(
 		0, 0,
@@ -516,7 +506,7 @@ func (s *SettingsScreen) DrawScreen(gm *core.GameManager) {
 
 	title := "Settings"
 
-	sizeTitle := rl.MeasureTextEx(s.font, title, 100, 2)
+	sizeTitle := rl.MeasureTextEx(gm.Fonts["dh"], title, 100, 2)
 
 	pos := rl.Vector2{
 		X: float32(gm.ScreenWidth)/2 - sizeTitle.X/2,
@@ -524,7 +514,7 @@ func (s *SettingsScreen) DrawScreen(gm *core.GameManager) {
 	}
 
 	DrawEngravedText(
-		s.font,
+		gm.Fonts["dh"],
 		title,
 		pos,
 		100,
@@ -604,35 +594,17 @@ func (s *SettingsScreen) DrawScreen(gm *core.GameManager) {
 	rl.DrawText(backText, int32(backRect.X+backRect.Width/2-float32(backWidth)/2), int32(backRect.Y+backRect.Height/2-15), 30, backTextColor)
 }
 
-func (s *SettingsScreen) DrawScreenUI(gm *core.GameManager) {
-	controls := "Keyboard: Up/Down + Left/Right + Enter | Mouse: Drag sliders + Click toggles/back | Esc: Back"
-	controlsWidth := rl.MeasureText(controls, 20)
-	rl.DrawText(
-		controls,
-		gm.ScreenWidth/2-controlsWidth/2,
-		gm.ScreenHeight-44,
-		20,
-		rl.Color{R: 140, G: 160, B: 188, A: 255},
-	)
-}
-
 type TutorialScreen struct {
 	previousScreen core.Screen
 
-	font rl.Font
-
-	textureBackground rl.Texture2D
-	textureOptions    rl.Texture2D
+	textureBack rl.Texture2D
 }
 
 func NewTutorialScreen(currentScreen core.Screen) *TutorialScreen {
 	return &TutorialScreen{
 		previousScreen: currentScreen,
 
-		font: rl.LoadFont("assets/doublehomicide.ttf"),
-
-		textureBackground: rl.LoadTexture("assets/background.png"),
-		textureOptions:    rl.LoadTexture("assets/tutorial/options.png"),
+		textureBack: rl.LoadTexture("assets/misc/back.png"),
 	}
 }
 
@@ -656,7 +628,9 @@ func (s *TutorialScreen) UpdateScreen(gm *core.GameManager) {
 }
 
 func (s *TutorialScreen) DrawScreen(gm *core.GameManager) {
-	rl.DrawTexture(s.textureBackground, 0, 0, rl.Color{R: 120, G: 120, B: 120, A: 255})
+	rl.DrawTexture(gm.Textures["background"], 0, 0, rl.Color{R: 120, G: 120, B: 120, A: 255})
+
+	rl.DrawTexture(gm.Textures["back"], 0, 0, rl.White)
 
 	rl.DrawCircleGradient(
 		0, 0,
@@ -685,7 +659,7 @@ func (s *TutorialScreen) DrawScreen(gm *core.GameManager) {
 
 	title := "Tutorial"
 
-	sizeTitle := rl.MeasureTextEx(s.font, title, 100, 2)
+	sizeTitle := rl.MeasureTextEx(gm.Fonts["dh"], title, 100, 2)
 
 	pos := rl.Vector2{
 		X: float32(gm.ScreenWidth)/2 - sizeTitle.X/2,
@@ -693,7 +667,7 @@ func (s *TutorialScreen) DrawScreen(gm *core.GameManager) {
 	}
 
 	DrawEngravedText(
-		s.font,
+		gm.Fonts["dh"],
 		title,
 		pos,
 		100,
@@ -716,7 +690,7 @@ func (s *TutorialScreen) DrawScreen(gm *core.GameManager) {
 		}
 
 		DrawEngravedText(
-			s.font,
+			gm.Fonts["dh"],
 			line,
 			posL,
 			30,
@@ -741,7 +715,7 @@ func (s *TutorialScreen) DrawScreen(gm *core.GameManager) {
 
 	rl.DrawRectangleLinesEx(rect, 2, rl.Color{R: 102, G: 137, B: 179, A: 255})
 
-	sizeBack := rl.MeasureTextEx(s.font, "Back", 50, 2)
+	sizeBack := rl.MeasureTextEx(gm.Fonts["dh"], "Back", 50, 2)
 
 	posB := rl.Vector2{
 		X: rect.X + rect.Width/2 - sizeBack.X/2,
@@ -749,7 +723,7 @@ func (s *TutorialScreen) DrawScreen(gm *core.GameManager) {
 	}
 
 	DrawEngravedText(
-		s.font,
+		gm.Fonts["dh"],
 		"Back",
 		posB,
 		50,

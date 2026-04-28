@@ -21,6 +21,9 @@ type GameManager struct {
 	DeltaTime float32
 
 	ShouldQuit bool
+
+	Fonts    map[string]rl.Font
+	Textures map[string]rl.Texture2D
 }
 
 func NewGameManager(windowTitle string, config Config) *GameManager {
