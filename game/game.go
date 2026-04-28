@@ -121,12 +121,6 @@ func (g *Game) DrawScreen(gm *core.GameManager) {
 	}
 }
 
-func (g *Game) DrawScreenUI(gm *core.GameManager) {
-	for _, window := range g.windows {
-		window.DrawWindowUI(gm, g)
-	}
-}
-
 func (g *Game) UpdateWindowSizes(gm *core.GameManager) {
 	for _, window := range g.windows {
 		window.UpdateWindowSize(gm)

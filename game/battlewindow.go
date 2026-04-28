@@ -35,7 +35,7 @@ var (
 func NewBattleWindow(sizeFunc func(gm *core.GameManager) rl.Rectangle, gm *core.GameManager) *BattleWindow {
 	return &BattleWindow{
 		BaseWindow:   core.NewBaseWindow[Game](sizeFunc, gm, true),
-		enemyTexture: rl.LoadTexture("assets/wormy.png"),
+		enemyTexture: rl.LoadTexture("assets/medbay.png"),
 	}
 }
 

@@ -8,10 +8,50 @@ import (
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
+func DrawEngravedText(font rl.Font, text string, pos rl.Vector2, size float32, spacing float32, color rl.Color) {
+	shadowOffset := float32(2)
+
+	// dark shadow (top-left)
+	rl.DrawTextEx(
+		font,
+		text,
+		rl.Vector2{X: pos.X - shadowOffset, Y: pos.Y - shadowOffset},
+		size,
+		spacing,
+		rl.Color{R: 0, G: 0, B: 0, A: 180},
+	)
+
+	// highlight (bottom-right)
+	rl.DrawTextEx(
+		font,
+		text,
+		rl.Vector2{X: pos.X + shadowOffset, Y: pos.Y + shadowOffset},
+		size,
+		spacing,
+		rl.Color{R: 255, G: 255, B: 255, A: 60},
+	)
+
+	// main text (slightly muted, not pure white)
+	rl.DrawTextEx(
+		font,
+		text,
+		pos,
+		size,
+		spacing,
+		color,
+	)
+}
+
 type MainMenuScreen struct {
 	options  []string
 	selected int
 	hovered  int
+
+	font rl.Font
+
+	textureBackground rl.Texture2D
+	textureTitle      rl.Texture2D
+	textureOptions    rl.Texture2D
 }
 
 func NewMainMenuScreen() *MainMenuScreen {
@@ -19,6 +59,12 @@ func NewMainMenuScreen() *MainMenuScreen {
 		options:  []string{"Start Game", "Settings", "Tutorial", "Quit"},
 		selected: 0,
 		hovered:  -1,
+
+		font: rl.LoadFont("assets/doublehomicide.ttf"),
+
+		textureBackground: rl.LoadTexture("assets/background.png"),
+		textureOptions:    rl.LoadTexture("assets/main/options.png"),
+		textureTitle:      rl.LoadTexture("assets/main/title.png"),
 	}
 }
 
@@ -32,11 +78,11 @@ func (s *MainMenuScreen) ensureInitialized() {
 }
 
 func (s *MainMenuScreen) menuOptionRect(gm *core.GameManager, index int) rl.Rectangle {
-	buttonWidth := float32(360)
-	buttonHeight := float32(56)
-	buttonSpacing := float32(18)
+	buttonWidth := float32(380)
+	buttonHeight := float32(95)
+	buttonSpacing := float32(12.5)
 	totalHeight := float32(len(s.options))*buttonHeight + float32(len(s.options)-1)*buttonSpacing
-	startY := float32(gm.ScreenHeight)/2 - totalHeight/2 + 40
+	startY := float32(gm.ScreenHeight)/2 - totalHeight/2 + 137.5
 	x := float32(gm.ScreenWidth)/2 - buttonWidth/2
 	y := startY + float32(index)*(buttonHeight+buttonSpacing)
 
@@ -101,60 +147,82 @@ func (s *MainMenuScreen) activateSelected(gm *core.GameManager) {
 }
 
 func (s *MainMenuScreen) DrawScreen(gm *core.GameManager) {
-	rl.ClearBackground(rl.Color{R: 10, G: 18, B: 34, A: 255})
+	rl.DrawTexture(s.textureBackground, 0, 0, rl.Color{R: 120, G: 120, B: 120, A: 255})
 
-	centerX := gm.ScreenWidth / 2
-	title := "ARMADA"
-	titleWidth := rl.MeasureText(title, 92)
-	rl.DrawText(title, centerX-titleWidth/2, 88, 92, rl.Color{R: 229, G: 237, B: 255, A: 255})
+	rl.DrawTexture(s.textureOptions, 0, 0, rl.White)
 
-	subtitle := "Select an option"
-	subtitleWidth := rl.MeasureText(subtitle, 30)
-	rl.DrawText(subtitle, centerX-subtitleWidth/2, 190, 30, rl.Color{R: 150, G: 177, B: 210, A: 255})
+	rl.DrawCircleGradient(
+		0, 0,
+		500,
+		rl.Color{R: 0, G: 0, B: 0, A: 200},
+		rl.Color{R: 0, G: 0, B: 0, A: 0},
+	)
+	rl.DrawCircleGradient(
+		gm.ScreenWidth, 0,
+		500,
+		rl.Color{R: 0, G: 0, B: 0, A: 200},
+		rl.Color{R: 0, G: 0, B: 0, A: 0},
+	)
+	rl.DrawCircleGradient(
+		0, gm.ScreenHeight,
+		500,
+		rl.Color{R: 0, G: 0, B: 0, A: 200},
+		rl.Color{R: 0, G: 0, B: 0, A: 0},
+	)
+	rl.DrawCircleGradient(
+		gm.ScreenWidth, gm.ScreenHeight,
+		500,
+		rl.Color{R: 0, G: 0, B: 0, A: 200},
+		rl.Color{R: 0, G: 0, B: 0, A: 0},
+	)
+
+	rl.DrawTexture(s.textureTitle, 0, 0, rl.White)
 
 	for i, option := range s.options {
 		rect := s.menuOptionRect(gm, i)
 		isSelected := s.selected == i
 		isHovered := s.hovered == i
 
-		fillColor := rl.Color{R: 28, G: 48, B: 77, A: 255}
-		textColor := rl.Color{R: 204, G: 217, B: 236, A: 255}
+		fillColor := rl.Color{R: 0, G: 0, B: 0, A: 0}
+		textColor := rl.Color{R: 0, G: 0, B: 0, A: 255}
 
 		if isHovered {
-			fillColor = rl.Color{R: 42, G: 77, B: 119, A: 255}
+			fillColor = rl.Color{R: 0, G: 0, B: 0, A: 0}
 		}
 		if isSelected {
-			fillColor = rl.Color{R: 68, G: 118, B: 171, A: 255}
+			fillColor = rl.Color{R: 0, G: 0, B: 0, A: 0}
 			textColor = rl.White
 		}
 
 		rl.DrawRectangleRec(rect, fillColor)
-		rl.DrawRectangleLinesEx(rect, 2, rl.Color{R: 102, G: 137, B: 179, A: 255})
 
-		textSize := int32(30)
-		textWidth := rl.MeasureText(option, textSize)
-		textX := int32(rect.X + rect.Width/2 - float32(textWidth)/2)
-		textY := int32(rect.Y + rect.Height/2 - float32(textSize)/2)
-		rl.DrawText(option, textX, textY, textSize, textColor)
+		sizeOption := rl.MeasureTextEx(s.font, option, 50, 2)
+
+		pos := rl.Vector2{
+			X: rect.X + rect.Width/2 - sizeOption.X/2,
+			Y: rect.Y + rect.Height/2 - sizeOption.Y/2,
+		}
+
+		DrawEngravedText(
+			s.font,
+			option,
+			pos,
+			50,
+			2,
+			textColor,
+		)
 	}
-}
-
-func (s *MainMenuScreen) DrawScreenUI(gm *core.GameManager) {
-	controls := "Keyboard: Up/Down + Enter | Mouse: Hover + Click | Esc: Quit"
-	controlsWidth := rl.MeasureText(controls, 20)
-	rl.DrawText(
-		controls,
-		gm.ScreenWidth/2-controlsWidth/2,
-		gm.ScreenHeight-48,
-		20,
-		rl.Color{R: 140, G: 160, B: 188, A: 255},
-	)
 }
 
 type SettingsScreen struct {
 	previousScreen core.Screen
 	selectedRow    int
 	draggingSlider int
+
+	font rl.Font
+
+	textureBackground rl.Texture2D
+	textureOptions    rl.Texture2D
 }
 
 func NewSettingsScreen(currentScreen core.Screen) *SettingsScreen {
@@ -162,6 +230,11 @@ func NewSettingsScreen(currentScreen core.Screen) *SettingsScreen {
 		previousScreen: currentScreen,
 		selectedRow:    0,
 		draggingSlider: -1,
+
+		font: rl.LoadFont("assets/doublehomicide.ttf"),
+
+		textureBackground: rl.LoadTexture("assets/background.png"),
+		textureOptions:    rl.LoadTexture("assets/settings/options.png"),
 	}
 }
 
@@ -414,11 +487,50 @@ func (s *SettingsScreen) UpdateScreen(gm *core.GameManager) {
 }
 
 func (s *SettingsScreen) DrawScreen(gm *core.GameManager) {
-	rl.ClearBackground(rl.Color{R: 14, G: 21, B: 37, A: 255})
+	rl.DrawTexture(s.textureBackground, 0, 0, rl.Color{R: 120, G: 120, B: 120, A: 255})
+
+	rl.DrawCircleGradient(
+		0, 0,
+		500,
+		rl.Color{R: 0, G: 0, B: 0, A: 200},
+		rl.Color{R: 0, G: 0, B: 0, A: 0},
+	)
+	rl.DrawCircleGradient(
+		gm.ScreenWidth, 0,
+		500,
+		rl.Color{R: 0, G: 0, B: 0, A: 200},
+		rl.Color{R: 0, G: 0, B: 0, A: 0},
+	)
+	rl.DrawCircleGradient(
+		0, gm.ScreenHeight,
+		500,
+		rl.Color{R: 0, G: 0, B: 0, A: 200},
+		rl.Color{R: 0, G: 0, B: 0, A: 0},
+	)
+	rl.DrawCircleGradient(
+		gm.ScreenWidth, gm.ScreenHeight,
+		500,
+		rl.Color{R: 0, G: 0, B: 0, A: 200},
+		rl.Color{R: 0, G: 0, B: 0, A: 0},
+	)
 
 	title := "Settings"
-	titleWidth := rl.MeasureText(title, 64)
-	rl.DrawText(title, gm.ScreenWidth/2-titleWidth/2, 72, 64, rl.Color{R: 230, G: 236, B: 247, A: 255})
+
+	sizeTitle := rl.MeasureTextEx(s.font, title, 100, 2)
+
+	pos := rl.Vector2{
+		X: float32(gm.ScreenWidth)/2 - sizeTitle.X/2,
+		Y: 70,
+	}
+
+	DrawEngravedText(
+		s.font,
+		title,
+		pos,
+		100,
+		2,
+		rl.White,
+	)
 
 	volumeLabels := []string{"Master Volume", "Music Volume", "SFX Volume"}
 	for i, label := range volumeLabels {
@@ -506,10 +618,22 @@ func (s *SettingsScreen) DrawScreenUI(gm *core.GameManager) {
 
 type TutorialScreen struct {
 	previousScreen core.Screen
+
+	font rl.Font
+
+	textureBackground rl.Texture2D
+	textureOptions    rl.Texture2D
 }
 
 func NewTutorialScreen(currentScreen core.Screen) *TutorialScreen {
-	return &TutorialScreen{previousScreen: currentScreen}
+	return &TutorialScreen{
+		previousScreen: currentScreen,
+
+		font: rl.LoadFont("assets/doublehomicide.ttf"),
+
+		textureBackground: rl.LoadTexture("assets/background.png"),
+		textureOptions:    rl.LoadTexture("assets/tutorial/options.png"),
+	}
 }
 
 func (s *TutorialScreen) ResizeScreen(gm *core.GameManager) {}
@@ -520,23 +644,62 @@ func (s *TutorialScreen) UpdateScreen(gm *core.GameManager) {
 		return
 	}
 
-	backRect := rl.Rectangle{
+	rect := rl.Rectangle{
 		X:      float32(gm.ScreenWidth)/2 - 170,
 		Y:      float32(gm.ScreenHeight) - 110,
 		Width:  340,
 		Height: 54,
 	}
-	if rl.CheckCollisionPointRec(rl.GetMousePosition(), backRect) && rl.IsMouseButtonPressed(rl.MouseLeftButton) {
+	if rl.CheckCollisionPointRec(rl.GetMousePosition(), rect) && rl.IsMouseButtonPressed(rl.MouseLeftButton) {
 		gm.SetScreen(s.previousScreen)
 	}
 }
 
 func (s *TutorialScreen) DrawScreen(gm *core.GameManager) {
-	rl.ClearBackground(rl.Color{R: 11, G: 18, B: 31, A: 255})
+	rl.DrawTexture(s.textureBackground, 0, 0, rl.Color{R: 120, G: 120, B: 120, A: 255})
+
+	rl.DrawCircleGradient(
+		0, 0,
+		500,
+		rl.Color{R: 0, G: 0, B: 0, A: 200},
+		rl.Color{R: 0, G: 0, B: 0, A: 0},
+	)
+	rl.DrawCircleGradient(
+		gm.ScreenWidth, 0,
+		500,
+		rl.Color{R: 0, G: 0, B: 0, A: 200},
+		rl.Color{R: 0, G: 0, B: 0, A: 0},
+	)
+	rl.DrawCircleGradient(
+		0, gm.ScreenHeight,
+		500,
+		rl.Color{R: 0, G: 0, B: 0, A: 200},
+		rl.Color{R: 0, G: 0, B: 0, A: 0},
+	)
+	rl.DrawCircleGradient(
+		gm.ScreenWidth, gm.ScreenHeight,
+		500,
+		rl.Color{R: 0, G: 0, B: 0, A: 200},
+		rl.Color{R: 0, G: 0, B: 0, A: 0},
+	)
 
 	title := "Tutorial"
-	titleWidth := rl.MeasureText(title, 64)
-	rl.DrawText(title, gm.ScreenWidth/2-titleWidth/2, 70, 64, rl.Color{R: 230, G: 236, B: 247, A: 255})
+
+	sizeTitle := rl.MeasureTextEx(s.font, title, 100, 2)
+
+	pos := rl.Vector2{
+		X: float32(gm.ScreenWidth)/2 - sizeTitle.X/2,
+		Y: 70,
+	}
+
+	DrawEngravedText(
+		s.font,
+		title,
+		pos,
+		100,
+		2,
+		rl.White,
+	)
 
 	lines := []string{
 		"1. Keep your ship running while under pressure.",
@@ -547,35 +710,50 @@ func (s *TutorialScreen) DrawScreen(gm *core.GameManager) {
 
 	startY := int32(190)
 	for i, line := range lines {
-		rl.DrawText(line, 120, startY+int32(i*48), 34, rl.Color{R: 191, G: 205, B: 227, A: 255})
+		posL := rl.Vector2{
+			X: 120,
+			Y: float32(startY + int32(i*48)),
+		}
+
+		DrawEngravedText(
+			s.font,
+			line,
+			posL,
+			30,
+			2,
+			rl.White,
+		)
 	}
 
-	backRect := rl.Rectangle{
+	rect := rl.Rectangle{
 		X:      float32(gm.ScreenWidth)/2 - 170,
 		Y:      float32(gm.ScreenHeight) - 110,
 		Width:  340,
 		Height: 54,
 	}
 
-	hovered := rl.CheckCollisionPointRec(rl.GetMousePosition(), backRect)
-	backColor := rl.Color{R: 35, G: 54, B: 82, A: 255}
-	if hovered {
-		backColor = rl.Color{R: 62, G: 94, B: 137, A: 255}
-	}
-	textColor := rl.Color{R: 204, G: 217, B: 236, A: 255}
+	hovered := rl.CheckCollisionPointRec(rl.GetMousePosition(), rect)
+	textColor := rl.Black
+
 	if hovered {
 		textColor = rl.White
 	}
 
-	rl.DrawRectangleRec(backRect, backColor)
-	rl.DrawRectangleLinesEx(backRect, 2, rl.Color{R: 102, G: 137, B: 179, A: 255})
-	backText := "Back"
-	backWidth := rl.MeasureText(backText, 30)
-	rl.DrawText(backText, int32(backRect.X+backRect.Width/2-float32(backWidth)/2), int32(backRect.Y+backRect.Height/2-15), 30, textColor)
-}
+	rl.DrawRectangleLinesEx(rect, 2, rl.Color{R: 102, G: 137, B: 179, A: 255})
 
-func (s *TutorialScreen) DrawScreenUI(gm *core.GameManager) {
-	controls := "Press Enter/Esc or click Back to return"
-	controlsWidth := rl.MeasureText(controls, 22)
-	rl.DrawText(controls, gm.ScreenWidth/2-controlsWidth/2, gm.ScreenHeight-42, 22, rl.Color{R: 140, G: 160, B: 188, A: 255})
+	sizeBack := rl.MeasureTextEx(s.font, "Back", 50, 2)
+
+	posB := rl.Vector2{
+		X: rect.X + rect.Width/2 - sizeBack.X/2,
+		Y: rect.Y + rect.Height/2 - sizeBack.Y/2,
+	}
+
+	DrawEngravedText(
+		s.font,
+		"Back",
+		posB,
+		50,
+		2,
+		textColor,
+	)
 }

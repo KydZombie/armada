@@ -15,10 +15,10 @@ func main() {
 			VSync:        false,
 			Resizeable:   true,
 			MasterVolume: 1.0,
-			MusicVolume:  0.8,
-			SFXVolume:    0.8,
+			MusicVolume:  1.0,
+			SFXVolume:    1.0,
 
-			Debug: true,
+			Debug: false,
 		},
 	)
 
