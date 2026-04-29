@@ -239,8 +239,9 @@ func (t TrainWindow) characterWorldPosition(state *Game, character *Character) r
 
 func (t TrainWindow) DrawWindow(gm *core.GameManager, state *Game) {
 	bounds := t.GetBounds()
-	rl.DrawRectangleRec(bounds, rl.Blue)
 	rl.BeginScissorMode(int32(bounds.X), int32(bounds.Y), int32(bounds.Width), int32(bounds.Height))
+
+	rl.DrawTexture(gm.Textures["trainT"], 0, 0, rl.White)
 
 	// TODO: Use sprites for train rendering
 
@@ -327,9 +328,41 @@ func (t TrainWindow) DrawWindow(gm *core.GameManager, state *Game) {
 		systemLabel := room.System.ShortName()
 		labelX := int32(roomBounds.X) + 4
 		labelFontSize := int32(26)
-		// Draw bold by drawing twice with offset
-		rl.DrawText(systemLabel, labelX+1, int32(labelY), labelFontSize, rl.DarkBlue)
-		rl.DrawText(systemLabel, labelX, int32(labelY), labelFontSize, rl.DarkBlue)
+		rl.DrawTextEx(
+			gm.Fonts["ec-b"],
+			systemLabel,
+			rl.NewVector2(float32(labelX+1), float32(labelY)),
+			float32(labelFontSize),
+			2,
+			rl.DarkGray,
+		)
+		rl.DrawTextEx(
+			gm.Fonts["ec-b"],
+			systemLabel,
+			rl.NewVector2(float32(labelX), float32(labelY)),
+			float32(labelFontSize),
+			2,
+			rl.DarkGray,
+		)
+
+		rl.DrawTexturePro(
+			gm.Textures[room.System.ShortName()],
+			rl.Rectangle{
+				X:      0,
+				Y:      0,
+				Width:  float32(480),
+				Height: float32(480),
+			},
+			rl.Rectangle{
+				X:      (roomBounds.X + roomBounds.Width/2) - 60/2,
+				Y:      (roomBounds.Y + roomBounds.Height/2) - 60/2,
+				Width:  60,
+				Height: 60,
+			},
+			rl.Vector2{X: 0, Y: 0},
+			0,
+			rl.White,
+		)
 
 		barWidth := roomBounds.Width - 8
 		barX := roomBounds.X + 4
@@ -355,6 +388,7 @@ func (t TrainWindow) DrawWindow(gm *core.GameManager, state *Game) {
 			room.MaxHealth,
 			rl.Red,
 			roomBarTextSize,
+			gm.Fonts["ec"],
 		)
 
 		drawStatBar(
@@ -367,9 +401,11 @@ func (t TrainWindow) DrawWindow(gm *core.GameManager, state *Game) {
 			"SYS",
 			systemPercent,
 			100,
-			rl.Gold,
+			rl.Orange,
 			roomBarTextSize,
+			gm.Fonts["ec-b"],
 		)
+
 	}
 
 	for _, character := range state.Train.Characters {
@@ -394,43 +430,6 @@ func (t TrainWindow) DrawWindow(gm *core.GameManager, state *Game) {
 			fontSize,
 			rl.White,
 		)
-	}
-
-	statsHeight := float32(96)
-	statsBounds := rl.Rectangle{
-		X:      bounds.X + 8,
-		Y:      bounds.Y + bounds.Height - statsHeight - 8,
-		Width:  bounds.Width - 16,
-		Height: statsHeight,
-	}
-
-	rl.DrawRectangleRec(statsBounds, rl.Fade(rl.Black, 0.48))
-	rl.DrawRectangleLinesEx(statsBounds, 2, rl.Fade(rl.White, 0.35))
-
-	hullText := fmt.Sprintf("Hull %d/%d", state.Train.Health, state.Train.MaxHealth)
-	defenseText := fmt.Sprintf("Shields %d   Evasion %d%%   Weapons Ready %d/%d", state.Train.ShieldLayers(), state.Train.EvasionChance(), state.Train.ReadyWeapons(), len(state.Train.Weapons))
-	medbayText := fmt.Sprintf("Medbay +%d/tick", state.Train.MedbayHealingPerTick())
-	lifeSupportText := "Life Support online"
-	if !state.Train.LifeSupportOperational() {
-		lifeSupportText = fmt.Sprintf("Life Support offline (%d/tick)", state.Train.LifeSupportDamagePerTick())
-	}
-	cooldownText := fmt.Sprintf("Cooldowns: %s", weaponCooldownSummary(state))
-
-	line1Size := fitTextSize(hullText, statsBounds.Width-20, 26, 18)
-	line2Size := fitTextSize(defenseText, statsBounds.Width-20, 22, 16)
-	line3 := fmt.Sprintf("%s   |   %s", medbayText, lifeSupportText)
-	line3Size := fitTextSize(line3, statsBounds.Width-20, 20, 14)
-	line4Size := fitTextSize(cooldownText, statsBounds.Width-20, 20, 14)
-
-	rl.DrawText(hullText, int32(statsBounds.X+10), int32(statsBounds.Y+4), line1Size, rl.White)
-	rl.DrawText(defenseText, int32(statsBounds.X+10), int32(statsBounds.Y+28), line2Size, rl.LightGray)
-	rl.DrawText(line3, int32(statsBounds.X+10), int32(statsBounds.Y+50), line3Size, rl.Green)
-
-	wrappedCooldown := wrapTerminalLine(cooldownText, statsBounds.Width-20, line4Size)
-	lineY := int32(statsBounds.Y + 72)
-	for _, line := range wrappedCooldown {
-		rl.DrawText(line, int32(statsBounds.X+10), lineY, line4Size, rl.Orange)
-		lineY += line4Size + 1
 	}
 
 	rl.EndScissorMode()
