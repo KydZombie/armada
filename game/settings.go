@@ -412,5 +412,3 @@ func (s *SettingsScreen) DrawScreen(gm *core.GameManager) {
 		textColor,
 	)
 }
-
-func (s *SettingsScreen) DrawScreenUI(gm *core.GameManager) {}

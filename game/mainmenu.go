@@ -195,5 +195,3 @@ func (s *MainMenuScreen) DrawScreen(gm *core.GameManager) {
 		)
 	}
 }
-
-func (s *MainMenuScreen) DrawScreenUI(gm *core.GameManager) {}

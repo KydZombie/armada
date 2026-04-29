@@ -2,6 +2,7 @@ package game
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/KydZombie/armada/core"
 	rl "github.com/gen2brain/raylib-go/raylib"
@@ -58,6 +59,8 @@ func (m MissionWindow) UpdateWindow(gm *core.GameManager, state *Game) {
 
 func (m MissionWindow) DrawWindow(gm *core.GameManager, state *Game) {
 	bounds := m.GetBounds()
+	rl.DrawRectangleRec(bounds, battleBgColor)
+	rl.DrawRectangleLinesEx(bounds, 2, rl.Fade(battleBorderColor, 0.6))
 
 	const missionFontSize int32 = 21
 	const missionFontMinSize int32 = 15
@@ -79,22 +82,22 @@ func (m MissionWindow) DrawWindow(gm *core.GameManager, state *Game) {
 	header.Height = 38
 	drawPanelCard(header, battleInsetColor, rl.Fade(battleAccentColor, 0.8))
 	rl.DrawRectangleRec(rl.Rectangle{X: header.X, Y: header.Y, Width: 4, Height: header.Height}, battleAccentColor)
-	drawFittedText(gm, "Mission", int32(header.X+12), int32(header.Y+6), header.Width-24, missionTitleFontSize, missionTitleMinSize, rl.White)
+	drawFittedText("Mission", int32(header.X+12), int32(header.Y+6), header.Width-24, missionTitleFontSize, missionTitleMinSize, rl.White)
 
-	missionBounds := rl.Rectangle{X: content.X + 10, Y: header.Y + header.Height + 10, Width: content.Width - 20, Height: 140}
+	missionBounds := rl.Rectangle{X: content.X + 10, Y: header.Y + header.Height + 10, Width: content.Width - 20, Height: 180}
 	drawPanelCard(missionBounds, battleInsetColor, rl.Fade(battleBorderColor, 0.55))
 
 	progressLine := fmt.Sprintf("Kill hostiles: %d/%d", state.Wave.KillsDone, state.Wave.KillsRequired)
-	progressColor := rl.LightGray
+	progressColor := rl.SkyBlue
 	if state.Wave.Success {
 		progressColor = rl.Green
 	} else if state.Wave.Failed {
 		progressColor = rl.Red
 	}
-	drawFittedText(gm, progressLine, int32(missionBounds.X+12), int32(missionBounds.Y+10), missionBounds.Width-24, missionLeadFontSize, missionLeadMinSize, progressColor)
+	drawFittedText(progressLine, int32(missionBounds.X+12), int32(missionBounds.Y+10), missionBounds.Width-24, missionLeadFontSize, missionLeadMinSize, progressColor)
 
 	timeLine := fmt.Sprintf("Time left: %.0fs", state.Wave.TimeRemaining)
-	timeColor := rl.Gray
+	timeColor := rl.SkyBlue
 	if state.Wave.TimeRemaining <= 15 {
 		timeColor = rl.Yellow
 	}
@@ -104,7 +107,16 @@ func (m MissionWindow) DrawWindow(gm *core.GameManager, state *Game) {
 	if state.Wave.TimeRemaining <= 4 {
 		timeColor = rl.Red
 	}
-	drawFittedText(gm, timeLine, int32(missionBounds.X+12), int32(missionBounds.Y+40), missionBounds.Width-24, missionLeadFontSize, missionLeadMinSize, timeColor)
+	drawFittedText(timeLine, int32(missionBounds.X+12), int32(missionBounds.Y+40), missionBounds.Width-24, missionLeadFontSize, missionLeadMinSize, timeColor)
+
+	targetLine := fmt.Sprintf("Target zone: %s", strings.ToUpper(string(state.SelectedTargetZone)))
+	drawFittedText(targetLine, int32(missionBounds.X+12), int32(missionBounds.Y+70), missionBounds.Width-24, missionFontSize, missionFontMinSize, rl.Gold)
+
+	leftColumn := rl.Rectangle{X: missionBounds.X + 12, Y: missionBounds.Y + 100, Width: missionBounds.Width*0.5 - 18, Height: missionBounds.Height - 108}
+	rightColumn := rl.Rectangle{X: missionBounds.X + missionBounds.Width*0.5 + 6, Y: missionBounds.Y + 100, Width: missionBounds.Width*0.5 - 18, Height: missionBounds.Height - 108}
+
+	drawMissionListSection(leftColumn, "Crew positions", state.CrewSupportSummaryLines(), rl.Green, missionFontSize, missionFontMinSize)
+	drawMissionListSection(rightColumn, "Cart damage", state.ThreatSummaryLines(), rl.Orange, missionFontSize, missionFontMinSize)
 
 	if state.Wave.Success {
 		bannerText := "LEVEL FAILED"
@@ -114,13 +126,13 @@ func (m MissionWindow) DrawWindow(gm *core.GameManager, state *Game) {
 
 		bannerBounds := rl.Rectangle{X: content.X + 10, Y: missionBounds.Y + missionBounds.Height + 8, Width: content.Width - 20, Height: 48}
 		drawPanelCard(bannerBounds, bannerFill, rl.Fade(bannerColor, 0.9))
-		drawFittedText(gm, bannerText, int32(bannerBounds.X+12), int32(bannerBounds.Y+11), bannerBounds.Width-24, missionLeadFontSize, missionLeadMinSize, bannerColor)
+		drawFittedText(bannerText, int32(bannerBounds.X+12), int32(bannerBounds.Y+11), bannerBounds.Width-24, missionLeadFontSize, missionLeadMinSize, bannerColor)
 	}
 
 	logBounds := rl.Rectangle{X: content.X + 10, Y: missionBounds.Y + missionBounds.Height + 60, Width: content.Width - 20, Height: content.Y + content.Height - (missionBounds.Y + missionBounds.Height + 70)}
 	if logBounds.Height >= 70 {
 		drawPanelCard(logBounds, rl.Fade(battleInsetColor, 0.92), rl.Fade(battleBorderColor, 0.45))
-		drawFittedText(gm, "Action Log", int32(logBounds.X+12), int32(logBounds.Y+8), logBounds.Width-24, missionFontSize, missionFontMinSize, rl.White)
+		drawFittedText("Action Log", int32(logBounds.X+12), int32(logBounds.Y+8), logBounds.Width-24, missionFontSize, missionFontMinSize, rl.White)
 		lineY := int32(logBounds.Y + 36)
 		maxY := int32(logBounds.Y + logBounds.Height - 10)
 		for i, line := range state.combatStatusLines {
@@ -157,10 +169,10 @@ func (m MissionWindow) DrawWindowUI(gm *core.GameManager, state *Game) {
 	drawGameOverModal(gm)
 }
 
-func drawMissionListSection(gm *core.GameManager, bounds rl.Rectangle, title string, items []string, accent rl.Color, titleFontSize int32, itemFontSize int32) {
+func drawMissionListSection(bounds rl.Rectangle, title string, items []string, accent rl.Color, titleFontSize int32, itemFontSize int32) {
 	drawPanelCard(bounds, battleInsetColor, rl.Fade(accent, 0.65))
 	rl.DrawRectangleRec(rl.Rectangle{X: bounds.X, Y: bounds.Y, Width: 4, Height: bounds.Height}, accent)
-	drawFittedText(gm, title, int32(bounds.X+10), int32(bounds.Y+6), bounds.Width-20, titleFontSize, titleFontSize-4, rl.White)
+	drawFittedText(title, int32(bounds.X+10), int32(bounds.Y+6), bounds.Width-20, titleFontSize, titleFontSize-4, rl.White)
 
 	lineY := int32(bounds.Y + 34)
 	maxY := int32(bounds.Y + bounds.Height - 8)
@@ -199,63 +211,34 @@ func drawMissionBriefingModal(gm *core.GameManager) {
 		Width:  panelWidth,
 		Height: panelHeight,
 	}
-	drawPanelCard(panelBounds, rl.Black, rl.Gray)
+	drawPanelCard(panelBounds, rl.NewColor(20, 34, 46, 250), rl.NewColor(124, 176, 228, 255))
+	rl.DrawRectangleLinesEx(panelBounds, 4, rl.NewColor(166, 210, 248, 255))
 
 	title := "HOW TO WIN"
 	titleSize := fitTextSize(title, panelBounds.Width-48, 44, 28)
-	titleWidth := int32(rl.MeasureTextEx(gm.Fonts["ec-i"], title, float32(titleSize), 2).X)
-	rl.DrawTextEx(
-		gm.Fonts["ec-i"],
-		title,
-		rl.NewVector2(
-			float32(panelBounds.X+panelBounds.Width/2-float32(titleWidth)/2),
-			float32(panelBounds.Y+18),
-		),
-		float32(titleSize),
-		2,
-		rl.White,
-	)
+	titleWidth := rl.MeasureText(title, titleSize)
+	rl.DrawText(title, int32(panelBounds.X+panelBounds.Width/2-float32(titleWidth)/2), int32(panelBounds.Y+18), titleSize, rl.White)
 
 	message := "Kill enough hostiles before the timer runs out. Keep the train hull alive."
 	messageSize := fitTextSize(message, panelBounds.Width-48, 30, 20)
 	messageLines := wrapTerminalLine(message, panelBounds.Width-48, messageSize)
 	lineY := int32(panelBounds.Y + 80)
 	for _, line := range messageLines {
-		lineWidth := int32(rl.MeasureTextEx(gm.Fonts["ec-i"], line, float32(messageSize), 2).X)
-		rl.DrawTextEx(
-			gm.Fonts["ec-i"],
-			line,
-			rl.NewVector2(
-				float32(panelBounds.X+panelBounds.Width/2-float32(lineWidth)/2),
-				float32(lineY),
-			),
-			float32(messageSize),
-			2,
-			rl.LightGray,
-		)
+		lineWidth := rl.MeasureText(line, messageSize)
+		rl.DrawText(line, int32(panelBounds.X+panelBounds.Width/2-float32(lineWidth)/2), lineY, messageSize, rl.LightGray)
 		lineY += messageSize + 5
 	}
 
 	startRect := missionBriefingStartButtonRect(gm)
-	buttonColor := rl.DarkGray
+	buttonColor := rl.NewColor(58, 96, 150, 255)
 	if rl.CheckCollisionPointRec(rl.GetMousePosition(), startRect) {
-		buttonColor = rl.Gray
+		buttonColor = rl.NewColor(78, 124, 188, 255)
 	}
-	drawPanelCard(startRect, buttonColor, rl.DarkGray)
+	drawPanelCard(startRect, buttonColor, rl.NewColor(176, 205, 241, 255))
 	buttonText := "Start"
 	buttonTextSize := fitTextSize(buttonText, startRect.Width-24, 28, 18)
-	buttonWidth := int32(rl.MeasureTextEx(gm.Fonts["ec-i"], buttonText, float32(buttonTextSize), 2).X)
-	rl.DrawTextEx(
-		gm.Fonts["ec-i"],
-		buttonText,
-		rl.NewVector2(
-			float32(startRect.X+startRect.Width/2-float32(buttonWidth)/2),
-			float32(startRect.Y+startRect.Height/2-float32(buttonTextSize)/2),
-		),
-		float32(buttonTextSize),
-		2,
-		rl.White,
-	)
+	buttonWidth := rl.MeasureText(buttonText, buttonTextSize)
+	rl.DrawText(buttonText, int32(startRect.X+startRect.Width/2-float32(buttonWidth)/2), int32(startRect.Y+startRect.Height/2-float32(buttonTextSize)/2), buttonTextSize, rl.White)
 }
 
 func drawGameOverModal(gm *core.GameManager) {
@@ -276,23 +259,13 @@ func drawGameOverModal(gm *core.GameManager) {
 		Width:  panelWidth,
 		Height: panelHeight,
 	}
-	drawPanelCard(panelBounds, rl.Black, rl.Gray)
-	rl.DrawRectangleLinesEx(panelBounds, 4, rl.DarkGray)
+	drawPanelCard(panelBounds, rl.NewColor(34, 18, 22, 248), rl.NewColor(255, 101, 101, 255))
+	rl.DrawRectangleLinesEx(panelBounds, 4, rl.NewColor(255, 153, 153, 255))
 
 	title := "LEVEL FAILED"
 	titleSize := fitTextSize(title, panelBounds.Width-48, 36, 24)
-	titleWidth := int32(rl.MeasureTextEx(gm.Fonts["ec-i"], title, float32(titleSize), 2).X)
-	rl.DrawTextEx(
-		gm.Fonts["ec-i"],
-		title,
-		rl.NewVector2(
-			float32(panelBounds.X+panelBounds.Width/2-float32(titleWidth)/2),
-			float32(panelBounds.Y+24),
-		),
-		float32(titleSize),
-		2,
-		rl.White,
-	)
+	titleWidth := rl.MeasureText(title, titleSize)
+	rl.DrawText(title, int32(panelBounds.X+panelBounds.Width/2-float32(titleWidth)/2), int32(panelBounds.Y+24), titleSize, rl.White)
 
 	retryRect := gameOverRetryButtonRect(gm)
 	menuRect := gameOverMenuButtonRect(gm)
@@ -300,46 +273,24 @@ func drawGameOverModal(gm *core.GameManager) {
 	retryHover := rl.CheckCollisionPointRec(mousePos, retryRect)
 	menuHover := rl.CheckCollisionPointRec(mousePos, menuRect)
 
-	retryFill := rl.DarkGray
+	retryFill := rl.NewColor(55, 103, 164, 255)
 	if retryHover {
-		retryFill = rl.Gray
+		retryFill = rl.NewColor(77, 131, 205, 255)
 	}
-	menuFill := rl.DarkGray
+	menuFill := rl.NewColor(77, 52, 58, 255)
 	if menuHover {
-		menuFill = rl.Gray
+		menuFill = rl.NewColor(111, 70, 78, 255)
 	}
 
-	drawPanelCard(retryRect, retryFill, rl.DarkGray)
-	drawPanelCard(menuRect, menuFill, rl.DarkGray)
+	drawPanelCard(retryRect, retryFill, rl.NewColor(169, 201, 242, 255))
+	drawPanelCard(menuRect, menuFill, rl.NewColor(242, 176, 176, 255))
 
 	retryText := "Retry"
 	menuText := "Main Menu"
 	retryTextSize := fitTextSize(retryText, retryRect.Width-24, 24, 16)
 	menuTextSize := fitTextSize(menuText, menuRect.Width-24, 24, 16)
-	retryWidth := int32(rl.MeasureTextEx(gm.Fonts["ec-i"], retryText, float32(retryTextSize), 2).X)
-	menuWidth := int32(rl.MeasureTextEx(gm.Fonts["ec-i"], menuText, float32(menuTextSize), 2).X)
-	rl.DrawTextEx(
-		gm.Fonts["ec-i"],
-		retryText,
-		rl.NewVector2(
-			float32(retryRect.X+retryRect.Width/2-float32(retryWidth)/2),
-			float32(retryRect.Y+retryRect.Height/2-float32(retryTextSize)/2),
-		),
-		float32(retryTextSize),
-		2,
-		rl.White,
-	)
-	rl.DrawTextEx(
-		gm.Fonts["ec-i"],
-		menuText,
-		rl.NewVector2(
-			float32(menuRect.X+menuRect.Width/2-float32(menuWidth)/2),
-			float32(menuRect.Y+menuRect.Height/2-float32(menuTextSize)/2),
-		),
-		float32(menuTextSize),
-		2,
-		rl.White,
-	)
+	rl.DrawText(retryText, int32(retryRect.X+retryRect.Width/2-float32(rl.MeasureText(retryText, retryTextSize))/2), int32(retryRect.Y+retryRect.Height/2-float32(retryTextSize)/2), retryTextSize, rl.White)
+	rl.DrawText(menuText, int32(menuRect.X+menuRect.Width/2-float32(rl.MeasureText(menuText, menuTextSize))/2), int32(menuRect.Y+menuRect.Height/2-float32(menuTextSize)/2), menuTextSize, rl.White)
 }
 
 func missionBriefingStartButtonRect(gm *core.GameManager) rl.Rectangle {
