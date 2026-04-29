@@ -56,7 +56,7 @@ func (t TrainWindow) UpdateWindow(gm *core.GameManager, state *Game) {
 
 func (t TrainWindow) trainOffset() rl.Vector2 {
 	bounds := t.GetBounds()
-	return rl.Vector2{X: bounds.X + 16.0, Y: bounds.Y + 48.0}
+	return rl.Vector2{X: 135, Y: bounds.Y + 55}
 }
 
 func (t TrainWindow) tileSize() float32 {
@@ -336,8 +336,4 @@ func (t TrainWindow) DrawWindow(gm *core.GameManager, state *Game) {
 			rl.White,
 		)
 	}
-}
-
-func (t TrainWindow) DrawWindowUI(gm *core.GameManager, state *Game) {
-	// Instructions removed per request
 }

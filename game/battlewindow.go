@@ -319,17 +319,16 @@ func (b BattleWindow) DrawWindow(gm *core.GameManager, state *Game) {
 	padding := float32(12)
 	panelGap := float32(12)
 	sidebarWidth := bounds.Width * 0.28
-	contentWidth := bounds.Width - sidebarWidth - padding*3
 
 	infoPanel := rl.Rectangle{
-		X:      bounds.X + padding,
-		Y:      bounds.Y + padding,
-		Width:  contentWidth,
-		Height: bounds.Height - padding*2,
+		X:      928,
+		Y:      432,
+		Width:  288,
+		Height: 256,
 	}
 	sidebarBounds := rl.Rectangle{
-		X:      infoPanel.X + infoPanel.Width + panelGap,
-		Y:      bounds.Y + padding,
+		X:      (float32(gm.ScreenWidth) / 2) - sidebarWidth/2,
+		Y:      bounds.Y + padding - 50,
 		Width:  sidebarWidth - panelGap,
 		Height: bounds.Height - padding*2,
 	}
@@ -432,6 +431,7 @@ func (b BattleWindow) DrawWindow(gm *core.GameManager, state *Game) {
 	b.drawEnemySidebar(sidebarBounds, enemySnapshot)
 
 	rl.DrawTexture(gm.Textures["terminal"], 0, 0, rl.White)
+	rl.DrawTexture(gm.Textures["layout"], 0, 0, rl.White)
 
 	rl.DrawCircleGradient(
 		0, 0,
