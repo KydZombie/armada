@@ -32,7 +32,7 @@ var (
 func NewBattleWindow(sizeFunc func(gm *core.GameManager) rl.Rectangle, gm *core.GameManager) *BattleWindow {
 	return &BattleWindow{
 		BaseWindow:   core.NewBaseWindow[Game](sizeFunc, gm, true),
-		enemyTexture: rl.LoadTexture("assets/textures/battle/system/medbay.png"),
+		enemyTexture: rl.LoadTexture("assets/wormy.png"),
 	}
 }
 
@@ -253,32 +253,7 @@ func (b BattleWindow) DrawWindow(gm *core.GameManager, state *Game) {
 		Alive:        state.Enemy.Alive(),
 	}
 	b.drawEnemySidebar(enemyPanel, enemySnapshot)
+}
 
-	rl.DrawTexture(gm.Textures["terminal"], 0, 0, rl.White)
-	rl.DrawTexture(gm.Textures["layout"], 0, 0, rl.White)
-
-	rl.DrawCircleGradient(
-		0, 0,
-		500,
-		rl.Color{R: 0, G: 0, B: 0, A: 200},
-		rl.Color{R: 0, G: 0, B: 0, A: 0},
-	)
-	rl.DrawCircleGradient(
-		gm.ScreenWidth, 0,
-		500,
-		rl.Color{R: 0, G: 0, B: 0, A: 200},
-		rl.Color{R: 0, G: 0, B: 0, A: 0},
-	)
-	rl.DrawCircleGradient(
-		0, gm.ScreenHeight,
-		500,
-		rl.Color{R: 0, G: 0, B: 0, A: 200},
-		rl.Color{R: 0, G: 0, B: 0, A: 0},
-	)
-	rl.DrawCircleGradient(
-		gm.ScreenWidth, gm.ScreenHeight,
-		500,
-		rl.Color{R: 0, G: 0, B: 0, A: 200},
-		rl.Color{R: 0, G: 0, B: 0, A: 0},
-	)
+func (b BattleWindow) DrawWindowUI(gm *core.GameManager, state *Game) {
 }

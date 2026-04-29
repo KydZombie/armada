@@ -136,3 +136,5 @@ func (s *TutorialScreen) DrawScreen(gm *core.GameManager) {
 		textColor,
 	)
 }
+
+func (s *TutorialScreen) DrawScreenUI(gm *core.GameManager) {}

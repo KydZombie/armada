@@ -58,10 +58,10 @@ func NewGameScreen(gm *core.GameManager) *Game {
 	terminal := NewTerminalWindow(
 		func(gm *core.GameManager) rl.Rectangle {
 			return rl.Rectangle{
-				X:      64,
-				Y:      432,
-				Width:  288,
-				Height: 256,
+				X:      windowMargin,
+				Y:      float32(gm.ScreenHeight)/2.0 + windowMargin,
+				Width:  float32(gm.ScreenWidth)/2.0 - windowMargin,
+				Height: float32(gm.ScreenHeight)/2.0 - windowMargin*2,
 			}
 		},
 		gm,
@@ -103,18 +103,6 @@ func NewGameScreen(gm *core.GameManager) *Game {
 				Y:      float32(gm.ScreenHeight)/2.0 + windowMargin,
 				Width:  float32(gm.ScreenWidth)/2.0 - windowMargin*2 - rightColumnInset,
 				Height: float32(gm.ScreenHeight)/2.0 - windowMargin*2,
-			}
-		},
-		gm,
-	))
-
-	gs.windows = append(gs.windows, NewTrainWindow(
-		func(gm *core.GameManager) rl.Rectangle {
-			return rl.Rectangle{
-				X:      windowMargin,
-				Y:      windowMargin,
-				Width:  float32(gm.ScreenWidth) - windowMargin*2,
-				Height: float32(gm.ScreenHeight)/2.0 - windowMargin,
 			}
 		},
 		gm,
@@ -162,7 +150,7 @@ func (g *Game) UpdateScreen(gm *core.GameManager) {
 }
 
 func (g *Game) DrawScreen(gm *core.GameManager) {
-	rl.ClearBackground(rl.Black)
+	rl.ClearBackground(rl.DarkBlue)
 
 	for _, window := range g.windows {
 		window.DrawWindow(gm, g)
@@ -170,26 +158,26 @@ func (g *Game) DrawScreen(gm *core.GameManager) {
 }
 
 func (g *Game) DrawScreenUI(gm *core.GameManager) {
-	//if g.isGameOverModalActive() {
-	//	for _, window := range g.windows {
-	//		if _, ok := window.(*MissionWindow); ok {
-	//			window.DrawWindowUI(gm, g)
-	//		}
-	//	}
-	//	return
-	//}
-	//if g.isMissionBriefingActive() {
-	//	for _, window := range g.windows {
-	//		if _, ok := window.(*MissionWindow); ok {
-	//			window.DrawWindowUI(gm, g)
-	//		}
-	//	}
-	//	return
-	//}
-	//
-	//for _, window := range g.windows {
-	//	window.DrawWindowUI(gm, g)
-	//}
+	if g.isGameOverModalActive() {
+		for _, window := range g.windows {
+			if _, ok := window.(*MissionWindow); ok {
+				window.DrawWindowUI(gm, g)
+			}
+		}
+		return
+	}
+	if g.isMissionBriefingActive() {
+		for _, window := range g.windows {
+			if _, ok := window.(*MissionWindow); ok {
+				window.DrawWindowUI(gm, g)
+			}
+		}
+		return
+	}
+
+	for _, window := range g.windows {
+		window.DrawWindowUI(gm, g)
+	}
 }
 
 func (g *Game) UpdateWindowSizes(gm *core.GameManager) {
