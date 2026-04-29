@@ -170,26 +170,26 @@ func (g *Game) DrawScreen(gm *core.GameManager) {
 }
 
 func (g *Game) DrawScreenUI(gm *core.GameManager) {
-	if g.isGameOverModalActive() {
-		for _, window := range g.windows {
-			if _, ok := window.(*MissionWindow); ok {
-				window.DrawWindowUI(gm, g)
-			}
-		}
-		return
-	}
-	if g.isMissionBriefingActive() {
-		for _, window := range g.windows {
-			if _, ok := window.(*MissionWindow); ok {
-				window.DrawWindowUI(gm, g)
-			}
-		}
-		return
-	}
-
-	for _, window := range g.windows {
-		window.DrawWindowUI(gm, g)
-	}
+	//if g.isGameOverModalActive() {
+	//	for _, window := range g.windows {
+	//		if _, ok := window.(*MissionWindow); ok {
+	//			window.DrawWindowUI(gm, g)
+	//		}
+	//	}
+	//	return
+	//}
+	//if g.isMissionBriefingActive() {
+	//	for _, window := range g.windows {
+	//		if _, ok := window.(*MissionWindow); ok {
+	//			window.DrawWindowUI(gm, g)
+	//		}
+	//	}
+	//	return
+	//}
+	//
+	//for _, window := range g.windows {
+	//	window.DrawWindowUI(gm, g)
+	//}
 }
 
 func (g *Game) UpdateWindowSizes(gm *core.GameManager) {
