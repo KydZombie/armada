@@ -61,7 +61,7 @@ func (g *Game) startWave(number int) {
 		number = 1
 	}
 
-	timeBudget := float32((50 + number*15) * 3)
+	timeBudget := float32(300)
 	killsRequired := 2 + number
 	if killsRequired > 8 {
 		killsRequired = 8
@@ -128,6 +128,12 @@ func (g *Game) updateWaveState(deltaSeconds float32) {
 	}
 
 	g.tickThreats(deltaSeconds)
+
+	if g.Train.Health <= 0 {
+		g.Wave.Active = false
+		g.Wave.Failed = true
+		g.SetCombatStatus("Wave failed. Train hull collapsed.")
+	}
 }
 
 func (g *Game) tickThreats(deltaSeconds float32) {

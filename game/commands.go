@@ -2,6 +2,7 @@ package game
 
 import (
 	"fmt"
+	"math/rand"
 	"sort"
 	"strconv"
 	"strings"
@@ -33,6 +34,87 @@ func parseRoomIndex(arg string, roomCount int) (int, string, bool) {
 	}
 
 	return roomIdx, "", true
+}
+
+func parseMoveRoomDestination(arg string, rooms []Room) (int, string, bool) {
+	normalized := normalizeCartDestination(arg)
+
+	systemAliases := map[string]SystemType{
+		"wea":          SystemWeapons,
+		"wpn":          SystemWeapons,
+		"weapon":       SystemWeapons,
+		"weapons":      SystemWeapons,
+		"eng":          SystemEngines,
+		"engine":       SystemEngines,
+		"engines":      SystemEngines,
+		"pil":          SystemPiloting,
+		"pilot":        SystemPiloting,
+		"piloting":     SystemPiloting,
+		"shd":          SystemShields,
+		"shield":       SystemShields,
+		"shields":      SystemShields,
+		"med":          SystemMedbay,
+		"medbay":       SystemMedbay,
+		"lif":          SystemLifeSupport,
+		"life":         SystemLifeSupport,
+		"life_support": SystemLifeSupport,
+		"lifesupport":  SystemLifeSupport,
+	}
+
+	// Also accept the on-screen room system labels directly.
+	for _, room := range rooms {
+		shortLabel := normalizeCartDestination(room.System.ShortName())
+		fullLabel := normalizeCartDestination(room.System.Name())
+		if shortLabel != "" {
+			systemAliases[shortLabel] = room.System.Type
+		}
+		if fullLabel != "" {
+			systemAliases[fullLabel] = room.System.Type
+		}
+	}
+
+	targetSystem, ok := systemAliases[normalized]
+	if !ok {
+		return 0, "Unknown destination. Use cart label/system name like wpn, eng, pil, shd, med, lif.", false
+	}
+
+	for roomIdx, room := range rooms {
+		if room.System.Type == targetSystem {
+			return roomIdx, "", true
+		}
+	}
+
+	return 0, fmt.Sprintf("No room mapped to %s.", normalized), false
+}
+
+func normalizeCartDestination(raw string) string {
+	value := strings.ToLower(strings.TrimSpace(raw))
+	value = strings.ReplaceAll(value, " ", "")
+	value = strings.ReplaceAll(value, "_", "")
+	value = strings.ReplaceAll(value, "-", "")
+	return value
+}
+
+func randomFreeTileInRoom(game *Game, room Room, movingCharacter *Character) (RoomPos, string, bool) {
+	type tile struct{ x, y int }
+	freeTiles := make([]tile, 0, room.Width*room.Height)
+
+	for x := 0; x < room.Width; x++ {
+		for y := 0; y < room.Height; y++ {
+			candidate := RoomPos{RoomId: room.Id, X: x, Y: y}
+			if _, occupied := game.Train.GetCharacterAtRoomPos(candidate, movingCharacter); occupied {
+				continue
+			}
+			freeTiles = append(freeTiles, tile{x: x, y: y})
+		}
+	}
+
+	if len(freeTiles) == 0 {
+		return RoomPos{}, fmt.Sprintf("No free tile available in room %s.", strings.ToLower(string(room.GetRune()))), false
+	}
+
+	selected := freeTiles[rand.Intn(len(freeTiles))]
+	return RoomPos{RoomId: room.Id, X: selected.x, Y: selected.y}, "", true
 }
 
 func parseWeaponTarget(arg string, roomCount int) (roomIdx int, targetHull bool, errText string, ok bool) {
@@ -364,34 +446,28 @@ func registerUnitCommands(db *core.CommandDB[Game]) {
 	db.RegisterCommand(core.Command[Game]{
 		Name: "move",
 		OnRun: func(args []string, game *Game) (string, bool) {
-			if len(args) != 3 {
-				return "Invalid number of arguments", false
+			if len(args) != 1 {
+				return "move takes one destination argument (example: move wpn or move weapons)", false
 			}
 
 			if game.SelectedCharacterIndex < 0 {
 				return "No character selected", false
 			}
 
-			roomIdx, errText, ok := parseRoomIndex(args[0], len(game.Train.Rooms))
+			roomIdx, errText, ok := parseMoveRoomDestination(args[0], game.Train.Rooms)
 			if !ok {
 				return errText, false
 			}
 
 			room := game.Train.Rooms[roomIdx]
 
-			x, err := strconv.Atoi(args[1])
-			x -= 1
-			if err != nil || x < 0 || x >= room.Width {
-				return fmt.Sprintf("Invalid x (%s). X starts at 1.", args[1]), false
-			}
-			y, err := strconv.Atoi(args[2])
-			y -= 1
-			if err != nil || y < 0 || y >= room.Height {
-				return fmt.Sprintf("Invalid y (%s). Y starts at 1.", args[2]), false
+			character := game.Train.Characters[game.SelectedCharacterIndex]
+			targetPos, errText, ok := randomFreeTileInRoom(game, room, character)
+			if !ok {
+				return errText, false
 			}
 
-			character := game.Train.Characters[game.SelectedCharacterIndex]
-			path, err := game.Train.MoveCharacter(character, RoomPos{RoomId: roomIdx, X: x, Y: y})
+			path, err := game.Train.MoveCharacter(character, targetPos)
 			if err != nil {
 				return err.Error(), false
 			}
@@ -403,22 +479,13 @@ func registerUnitCommands(db *core.CommandDB[Game]) {
 				pathLabels = append(pathLabels, string(game.Train.Rooms[roomId].GetRune()))
 			}
 
-			// Debug: show animation path waypoints
-			debugPath := make([]string, 0)
-			for i, pos := range character.MovementPath {
-				debugPath = append(debugPath, fmt.Sprintf("%s(%d,%d)", string(game.Train.Rooms[pos.RoomId].GetRune()), pos.X+1, pos.Y+1))
-				if i < len(character.MovementPath)-1 {
-					debugPath = append(debugPath, "->")
-				}
-			}
-
 			if len(pathLabels) > 1 {
-				return fmt.Sprintf("Moved %s through %s. Path: %s", character.Name, strings.Join(pathLabels, " -> "), strings.Join(debugPath, "")), true
+				return fmt.Sprintf("Moved %s to cart %s (%s).", character.Name, string(room.GetRune()), room.System.ShortName()), true
 			}
 
-			return fmt.Sprint("Moved ", character.Name, " within room ", pathLabels[0], ". Path: ", strings.Join(debugPath, ""), "."), true
+			return fmt.Sprintf("Moved %s within cart %s (%s).", character.Name, pathLabels[0], room.System.ShortName()), true
 		},
-		Description: []string{"Move a character", "Takes arguments [room], [x], and [y] (x and y start at 1)"},
+		Description: []string{"Move a character to a cart/system with random placement.", "Examples: move wpn, move eng, move med"},
 	})
 }
 
@@ -480,13 +547,13 @@ func registerCombatCommands(db *core.CommandDB[Game]) {
 	db.RegisterCommand(core.Command[Game]{
 		Name: "target",
 		OnRun: func(args []string, game *Game) (string, bool) {
-			if len(args) != 2 || strings.ToLower(args[0]) != "zone" {
-				return "target takes arguments: zone <head|core|legs>", false
+			if len(args) != 1 {
+				return "target takes one argument: <head|core|legs>", false
 			}
 
-			zone, ok := parseHitZone(args[1])
+			zone, ok := parseHitZone(args[0])
 			if !ok {
-				return "zone must be one of: head, core, legs", false
+				return "target must be one of: head, core, legs", false
 			}
 
 			game.SelectedTargetZone = zone
@@ -494,7 +561,7 @@ func registerCombatCommands(db *core.CommandDB[Game]) {
 			setCombatStatusMessage(game, message)
 			return message, true
 		},
-		Description: []string{"Set the active target zone.", "Example: target zone core"},
+		Description: []string{"Set the active target zone.", "Example: target core"},
 	})
 	db.RegisterCommand(core.Command[Game]{
 		Name:        "trainstatus",

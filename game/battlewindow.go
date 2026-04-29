@@ -37,6 +37,10 @@ func NewBattleWindow(sizeFunc func(gm *core.GameManager) rl.Rectangle, gm *core.
 }
 
 func (b BattleWindow) HandleInput(gm *core.GameManager, state *Game) bool {
+	if state.isGameOverModalActive() || state.isMissionBriefingActive() {
+		return false
+	}
+
 	return false
 }
 

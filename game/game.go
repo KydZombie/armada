@@ -19,11 +19,12 @@ type Game struct {
 	crewSystemTickTimer    float32
 	combatStatusLines      []string
 
-	SelectedWeaponIndex int
-	SelectedTargetZone  HitZone
-	Wave                WaveState
-	ActiveThreats       []TrainThreat
-	nextThreatID        int
+	SelectedWeaponIndex   int
+	SelectedTargetZone    HitZone
+	Wave                  WaveState
+	ActiveThreats         []TrainThreat
+	nextThreatID          int
+	MissionBriefingActive bool
 }
 
 func NewGameScreen(gm *core.GameManager) *Game {
@@ -44,6 +45,7 @@ func NewGameScreen(gm *core.GameManager) *Game {
 		combatStatusLines:      []string{"No combat actions yet."},
 		SelectedTargetZone:     ZoneCore,
 		ActiveThreats:          []TrainThreat{},
+		MissionBriefingActive:  true,
 	}
 	gs.startWave(1)
 
@@ -51,7 +53,7 @@ func NewGameScreen(gm *core.GameManager) *Game {
 	const rightColumnInset = 24.0
 	const missionExtraInset = 28.0
 	const missionWidthScale = 0.7
-	const trainMissionGap = 12.0
+	const trainMissionGap = 4.0
 
 	terminal := NewTerminalWindow(
 		func(gm *core.GameManager) rl.Rectangle {
@@ -126,6 +128,13 @@ func (g *Game) UpdateScreen(gm *core.GameManager) {
 		window.UpdateWindow(gm, g)
 	}
 
+	if g.isGameOverModalActive() {
+		return
+	}
+	if g.isMissionBriefingActive() {
+		return
+	}
+
 	if g.Train.WeaponsOperational() {
 		g.Train.AdvanceWeaponCooldowns(deltaSeconds)
 	}
@@ -149,6 +158,23 @@ func (g *Game) DrawScreen(gm *core.GameManager) {
 }
 
 func (g *Game) DrawScreenUI(gm *core.GameManager) {
+	if g.isGameOverModalActive() {
+		for _, window := range g.windows {
+			if _, ok := window.(*MissionWindow); ok {
+				window.DrawWindowUI(gm, g)
+			}
+		}
+		return
+	}
+	if g.isMissionBriefingActive() {
+		for _, window := range g.windows {
+			if _, ok := window.(*MissionWindow); ok {
+				window.DrawWindowUI(gm, g)
+			}
+		}
+		return
+	}
+
 	for _, window := range g.windows {
 		window.DrawWindowUI(gm, g)
 	}
@@ -255,6 +281,23 @@ func (g *Game) CrewSupportSummaryText() string {
 	return strings.Join(parts, "  |  ")
 }
 
+func (g *Game) CrewSupportSummaryLines() []string {
+	parts := make([]string, 0, len(g.Train.Characters))
+	for _, character := range g.Train.Characters {
+		if character.IsMoving {
+			continue
+		}
+
+		parts = append(parts, fmt.Sprintf("%s -> %s", character.Name, g.cartLabel(character.Pos.RoomId)))
+	}
+
+	if len(parts) == 0 {
+		return []string{"none"}
+	}
+
+	return parts
+}
+
 func (g *Game) SetCombatStatus(lines ...string) {
 	g.combatStatusLines = g.combatStatusLines[:0]
 	for _, line := range lines {
@@ -267,4 +310,39 @@ func (g *Game) SetCombatStatus(lines ...string) {
 	if len(g.combatStatusLines) == 0 {
 		g.combatStatusLines = []string{"No combat actions yet."}
 	}
+}
+
+func (g *Game) isGameOverModalActive() bool {
+	return g.Wave.Failed
+}
+
+func (g *Game) ThreatSummaryLines() []string {
+	if len(g.ActiveThreats) == 0 {
+		return []string{"none"}
+	}
+
+	damageByRoom := make(map[int]int, len(g.ActiveThreats))
+	for _, threat := range g.ActiveThreats {
+		damageByRoom[threat.RoomID] += threat.Severity
+	}
+
+	parts := make([]string, 0, len(damageByRoom))
+	for roomID := range g.Train.Rooms {
+		damage := damageByRoom[roomID]
+		if damage <= 0 {
+			continue
+		}
+
+		parts = append(parts, fmt.Sprintf("%s -> %d damage", g.cartLabel(roomID), damage))
+	}
+
+	if len(parts) == 0 {
+		return []string{"none"}
+	}
+
+	return parts
+}
+
+func (g *Game) isMissionBriefingActive() bool {
+	return g.MissionBriefingActive
 }

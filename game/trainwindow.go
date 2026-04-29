@@ -2,6 +2,7 @@ package game
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/KydZombie/armada/core"
 	rl "github.com/gen2brain/raylib-go/raylib"
@@ -11,6 +12,11 @@ type TrainWindow struct {
 	core.BaseWindow[Game]
 }
 
+const (
+	trainLayoutWidthTiles  float32 = 23
+	trainLayoutHeightTiles float32 = 3
+)
+
 func NewTrainWindow(sizeFunc func(gm *core.GameManager) rl.Rectangle, gm *core.GameManager) *TrainWindow {
 	return &TrainWindow{
 		BaseWindow: core.NewBaseWindow[Game](sizeFunc, gm, true),
@@ -18,6 +24,10 @@ func NewTrainWindow(sizeFunc func(gm *core.GameManager) rl.Rectangle, gm *core.G
 }
 
 func (t TrainWindow) HandleInput(gm *core.GameManager, state *Game) bool {
+	if state.isGameOverModalActive() || state.isMissionBriefingActive() {
+		return false
+	}
+
 	mousePos := rl.GetMousePosition()
 	if !rl.CheckCollisionPointRec(mousePos, t.GetBounds()) {
 		return false
@@ -56,29 +66,53 @@ func (t TrainWindow) UpdateWindow(gm *core.GameManager, state *Game) {
 
 func (t TrainWindow) trainOffset() rl.Vector2 {
 	bounds := t.GetBounds()
-	return rl.Vector2{X: bounds.X + 16.0, Y: bounds.Y + 48.0}
+	tile := t.tileSize()
+	widthTiles, heightTiles := trainLayoutWidthTiles, trainLayoutHeightTiles
+	layoutWidth := widthTiles * tile
+	layoutHeight := heightTiles * tile
+
+	topAreaY := bounds.Y + 34
+	topAreaHeight := bounds.Height - 150
+
+	x := bounds.X + (bounds.Width-layoutWidth)/2
+	if x < bounds.X+8 {
+		x = bounds.X + 8
+	}
+
+	y := topAreaY + (topAreaHeight-layoutHeight)/2
+	if y < bounds.Y+24 {
+		y = bounds.Y + 24
+	}
+
+	return rl.Vector2{X: x, Y: y}
 }
 
 func (t TrainWindow) tileSize() float32 {
 	bounds := t.GetBounds()
-
-	// Fit the full train layout (about 22-23 tiles wide) inside current window width.
-	widthBudget := bounds.Width - 56
-	tileByWidth := widthBudget / 23.0
-
-	// Keep room bars and the bottom stats strip visible as well.
-	heightBudget := bounds.Height - 156
-	tileByHeight := heightBudget / 3.0
-
-	tile := float32(48.0)
-	if tileByWidth < tile {
-		tile = tileByWidth
+	widthTiles, heightTiles := trainLayoutWidthTiles, trainLayoutHeightTiles
+	if widthTiles <= 0 {
+		widthTiles = 1
 	}
+	if heightTiles <= 0 {
+		heightTiles = 1
+	}
+
+	widthBudget := bounds.Width - 26
+	tileByWidth := widthBudget / widthTiles
+
+	// Reserve room for panel framing, room bars, and the train status strip.
+	heightBudget := bounds.Height - 132
+	tileByHeight := heightBudget / heightTiles
+
+	tile := tileByWidth
 	if tileByHeight < tile {
 		tile = tileByHeight
 	}
-	if tile < 18 {
-		tile = 18
+	if tile > 64 {
+		tile = 64
+	}
+	if tile < 20 {
+		tile = 20
 	}
 
 	return tile
@@ -290,23 +324,23 @@ func (t TrainWindow) DrawWindow(gm *core.GameManager, state *Game) {
 		}
 
 		labelY := roomBounds.Y + 4
-		rl.DrawText(string([]rune{room.GetRune()}), int32(roomBounds.X)+4, int32(labelY), roomLabelFontSize, rl.Black)
-		rl.DrawText(room.System.ShortName(), int32(roomBounds.X)+34, int32(labelY)+5, 16, rl.DarkBlue)
+		systemLabel := room.System.ShortName()
+		labelX := int32(roomBounds.X) + 4
+		labelFontSize := int32(26)
+		// Draw bold by drawing twice with offset
+		rl.DrawText(systemLabel, labelX+1, int32(labelY), labelFontSize, rl.DarkBlue)
+		rl.DrawText(systemLabel, labelX, int32(labelY), labelFontSize, rl.DarkBlue)
 
 		barWidth := roomBounds.Width - 8
 		barX := roomBounds.X + 4
 		healthBarY := roomBounds.Y + roomBounds.Height + 6
 		damageBarY := healthBarY + roomBarHeight + roomBarSpacing
-		maxDamageDisplay := room.AttackPower
-		if maxDamageDisplay < 5 {
-			maxDamageDisplay = 5
+		systemPercent := int(room.OperationalRatio() * 100)
+		if systemPercent < 0 {
+			systemPercent = 0
 		}
-
-		barLabel := "ATK"
-		barValue := room.AttackPower
-		if room.System.Type != SystemWeapons {
-			barLabel = "SYS"
-			barValue = 0
+		if systemPercent > 100 {
+			systemPercent = 100
 		}
 
 		drawStatBar(
@@ -330,9 +364,9 @@ func (t TrainWindow) DrawWindow(gm *core.GameManager, state *Game) {
 				Width:  barWidth,
 				Height: roomBarHeight,
 			},
-			barLabel,
-			barValue,
-			maxDamageDisplay,
+			"SYS",
+			systemPercent,
+			100,
 			rl.Gold,
 			roomBarTextSize,
 		)
@@ -362,7 +396,7 @@ func (t TrainWindow) DrawWindow(gm *core.GameManager, state *Game) {
 		)
 	}
 
-	statsHeight := float32(58)
+	statsHeight := float32(96)
 	statsBounds := rl.Rectangle{
 		X:      bounds.X + 8,
 		Y:      bounds.Y + bounds.Height - statsHeight - 8,
@@ -380,13 +414,43 @@ func (t TrainWindow) DrawWindow(gm *core.GameManager, state *Game) {
 	if !state.Train.LifeSupportOperational() {
 		lifeSupportText = fmt.Sprintf("Life Support offline (%d/tick)", state.Train.LifeSupportDamagePerTick())
 	}
+	cooldownText := fmt.Sprintf("Cooldowns: %s", weaponCooldownSummary(state))
 
-	rl.DrawText(hullText, int32(statsBounds.X+10), int32(statsBounds.Y+6), 22, rl.White)
-	rl.DrawText(defenseText, int32(statsBounds.X+200), int32(statsBounds.Y+9), 18, rl.LightGray)
-	rl.DrawText(medbayText, int32(statsBounds.X+10), int32(statsBounds.Y+32), 16, rl.Green)
-	rl.DrawText(lifeSupportText, int32(statsBounds.X+170), int32(statsBounds.Y+32), 16, rl.Orange)
+	line1Size := fitTextSize(hullText, statsBounds.Width-20, 26, 18)
+	line2Size := fitTextSize(defenseText, statsBounds.Width-20, 22, 16)
+	line3 := fmt.Sprintf("%s   |   %s", medbayText, lifeSupportText)
+	line3Size := fitTextSize(line3, statsBounds.Width-20, 20, 14)
+	line4Size := fitTextSize(cooldownText, statsBounds.Width-20, 20, 14)
+
+	rl.DrawText(hullText, int32(statsBounds.X+10), int32(statsBounds.Y+4), line1Size, rl.White)
+	rl.DrawText(defenseText, int32(statsBounds.X+10), int32(statsBounds.Y+28), line2Size, rl.LightGray)
+	rl.DrawText(line3, int32(statsBounds.X+10), int32(statsBounds.Y+50), line3Size, rl.Green)
+
+	wrappedCooldown := wrapTerminalLine(cooldownText, statsBounds.Width-20, line4Size)
+	lineY := int32(statsBounds.Y + 72)
+	for _, line := range wrappedCooldown {
+		rl.DrawText(line, int32(statsBounds.X+10), lineY, line4Size, rl.Orange)
+		lineY += line4Size + 1
+	}
 
 	rl.EndScissorMode()
+}
+
+func weaponCooldownSummary(state *Game) string {
+	if len(state.Train.Weapons) == 0 {
+		return "none"
+	}
+
+	parts := make([]string, 0, len(state.Train.Weapons))
+	for _, weapon := range state.Train.Weapons {
+		if weapon.Ready() {
+			parts = append(parts, fmt.Sprintf("%s 0s", weapon.Name))
+			continue
+		}
+		parts = append(parts, fmt.Sprintf("%s %ds", weapon.Name, weapon.CooldownDisplaySeconds()))
+	}
+
+	return strings.Join(parts, "  |  ")
 }
 
 func (t TrainWindow) DrawWindowUI(gm *core.GameManager, state *Game) {

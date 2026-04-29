@@ -70,6 +70,9 @@ func (t *TerminalWindow) HandleInput(gm *core.GameManager, state *Game) bool {
 	if !t.IsVisible() {
 		return false
 	}
+	if state.isGameOverModalActive() || state.isMissionBriefingActive() {
+		return false
+	}
 
 	for key := rl.GetKeyPressed(); key != 0; key = rl.GetKeyPressed() {
 		switch key {
