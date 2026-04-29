@@ -21,6 +21,9 @@ type GameManager struct {
 	DeltaTime float32
 
 	ShouldQuit bool
+
+	Fonts    map[string]rl.Font
+	Textures map[string]rl.Texture2D
 }
 
 func NewGameManager(windowTitle string, config Config) *GameManager {
@@ -107,7 +110,6 @@ func (gm *GameManager) RunFrame() {
 	defer rl.EndDrawing()
 
 	gm.Screen.DrawScreen(gm)
-	gm.Screen.DrawScreenUI(gm)
 	if gm.Debug {
 		dtText := fmt.Sprintf("FrameTime: %.4f", gm.DeltaTime)
 		rl.DrawRectangle(0, 0, 190, 40, rl.Black)

@@ -331,6 +331,25 @@ func (t TrainWindow) DrawWindow(gm *core.GameManager, state *Game) {
 		rl.DrawText(systemLabel, labelX+1, int32(labelY), labelFontSize, rl.DarkBlue)
 		rl.DrawText(systemLabel, labelX, int32(labelY), labelFontSize, rl.DarkBlue)
 
+		rl.DrawTexturePro(
+			gm.Textures[room.System.ShortName()],
+			rl.Rectangle{
+				X:      0,
+				Y:      0,
+				Width:  float32(480),
+				Height: float32(480),
+			},
+			rl.Rectangle{
+				X:      (roomBounds.X + roomBounds.Width/2) - 60/2,
+				Y:      (roomBounds.Y + roomBounds.Height/2) - 60/2,
+				Width:  60,
+				Height: 60,
+			},
+			rl.Vector2{X: 0, Y: 0},
+			0,
+			rl.White,
+		)
+
 		barWidth := roomBounds.Width - 8
 		barX := roomBounds.X + 4
 		healthBarY := roomBounds.Y + roomBounds.Height + 6
@@ -451,8 +470,4 @@ func weaponCooldownSummary(state *Game) string {
 	}
 
 	return strings.Join(parts, "  |  ")
-}
-
-func (t TrainWindow) DrawWindowUI(gm *core.GameManager, state *Game) {
-	// Instructions removed per request
 }

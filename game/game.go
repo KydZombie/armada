@@ -58,10 +58,10 @@ func NewGameScreen(gm *core.GameManager) *Game {
 	terminal := NewTerminalWindow(
 		func(gm *core.GameManager) rl.Rectangle {
 			return rl.Rectangle{
-				X:      windowMargin,
-				Y:      float32(gm.ScreenHeight)/2.0 + windowMargin,
-				Width:  float32(gm.ScreenWidth)/2.0 - windowMargin,
-				Height: float32(gm.ScreenHeight)/2.0 - windowMargin*2,
+				X:      64,
+				Y:      432,
+				Width:  288,
+				Height: 256,
 			}
 		},
 		gm,
@@ -103,6 +103,18 @@ func NewGameScreen(gm *core.GameManager) *Game {
 				Y:      float32(gm.ScreenHeight)/2.0 + windowMargin,
 				Width:  float32(gm.ScreenWidth)/2.0 - windowMargin*2 - rightColumnInset,
 				Height: float32(gm.ScreenHeight)/2.0 - windowMargin*2,
+			}
+		},
+		gm,
+	))
+
+	gs.windows = append(gs.windows, NewTrainWindow(
+		func(gm *core.GameManager) rl.Rectangle {
+			return rl.Rectangle{
+				X:      windowMargin,
+				Y:      windowMargin,
+				Width:  float32(gm.ScreenWidth) - windowMargin*2,
+				Height: float32(gm.ScreenHeight)/2.0 - windowMargin,
 			}
 		},
 		gm,
@@ -150,7 +162,7 @@ func (g *Game) UpdateScreen(gm *core.GameManager) {
 }
 
 func (g *Game) DrawScreen(gm *core.GameManager) {
-	rl.ClearBackground(rl.DarkBlue)
+	rl.ClearBackground(rl.Black)
 
 	for _, window := range g.windows {
 		window.DrawWindow(gm, g)
