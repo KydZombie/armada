@@ -183,8 +183,6 @@ func (t TrainWindow) characterWorldPosition(state *Game, character *Character) r
 }
 
 func (t TrainWindow) DrawWindow(gm *core.GameManager, state *Game) {
-	rl.DrawRectangleRec(t.GetBounds(), rl.Blue)
-
 	// TODO: Use sprites for train rendering
 
 	tileSize := t.tileSize()
@@ -250,6 +248,25 @@ func (t TrainWindow) DrawWindow(gm *core.GameManager, state *Game) {
 		labelY := roomBounds.Y + 4
 		rl.DrawText(string([]rune{room.GetRune()}), int32(roomBounds.X)+4, int32(labelY), roomLabelFontSize, rl.Black)
 		rl.DrawText(room.System.ShortName(), int32(roomBounds.X)+28, int32(labelY)+4, 14, rl.DarkBlue)
+
+		rl.DrawTexturePro(
+			gm.Textures[room.System.ShortName()],
+			rl.Rectangle{
+				X:      0,
+				Y:      0,
+				Width:  float32(480),
+				Height: float32(480),
+			},
+			rl.Rectangle{
+				X:      (roomBounds.X + roomBounds.Width/2) - 60/2,
+				Y:      (roomBounds.Y + roomBounds.Height/2) - 60/2,
+				Width:  60,
+				Height: 60,
+			},
+			rl.Vector2{X: 0, Y: 0},
+			0,
+			rl.White,
+		)
 
 		barWidth := roomBounds.Width - 8
 		barX := roomBounds.X + 4

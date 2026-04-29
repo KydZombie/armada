@@ -190,7 +190,7 @@ func (t *TerminalWindow) DrawWindow(gm *core.GameManager, state *Game) {
 	if !t.IsVisible() {
 		return
 	}
-	const fontSize int32 = 24
+	const fontSize int32 = 18
 
 	const innerOffset int32 = 4
 
@@ -232,8 +232,4 @@ func (t *TerminalWindow) DrawWindow(gm *core.GameManager, state *Game) {
 	}
 
 	rl.EndScissorMode()
-}
-
-func (t *TerminalWindow) DrawWindowUI(gm *core.GameManager, state *Game) {
-
 }

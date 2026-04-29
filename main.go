@@ -13,7 +13,7 @@ func main() {
 			ScreenWidth:  1280,
 			ScreenHeight: 720,
 			VSync:        false,
-			Resizeable:   true,
+			Resizeable:   false,
 			MasterVolume: 1.0,
 			MusicVolume:  1.0,
 			SFXVolume:    1.0,
@@ -23,7 +23,15 @@ func main() {
 	)
 
 	gameManager.CreateRaylibWindow()
-	defer rl.CloseWindow()
+	defer func() {
+		for _, font := range gameManager.Fonts {
+			rl.UnloadFont(font)
+		}
+		for _, tex := range gameManager.Textures {
+			rl.UnloadTexture(tex)
+		}
+		rl.CloseWindow()
+	}()
 
 	gameManager.Fonts = map[string]rl.Font{
 		"dh":   rl.LoadFont("assets/fonts/doublehomicide.ttf"),
@@ -33,18 +41,19 @@ func main() {
 	}
 
 	gameManager.Textures = map[string]rl.Texture2D{
-		"engine": rl.LoadTexture("assets/menus/battle/system/engine.png"),
-		"life":   rl.LoadTexture("assets/menus/battle/system/life.png"),
-		"medbay": rl.LoadTexture("assets/menus/battle/system/medbay.png"),
-		"pilot":  rl.LoadTexture("assets/menus/battle/system/pilot.png"),
-		"shield": rl.LoadTexture("assets/menus/battle/system/shield.png"),
-		"weapon": rl.LoadTexture("assets/menus/battle/system/weapon.png"),
+		"ENG":      rl.LoadTexture("assets/textures/battle/system/engine.png"),
+		"LIF":      rl.LoadTexture("assets/textures/battle/system/life.png"),
+		"MED":      rl.LoadTexture("assets/textures/battle/system/medbay.png"),
+		"PIL":      rl.LoadTexture("assets/textures/battle/system/pilot.png"),
+		"SHD":      rl.LoadTexture("assets/textures/battle/system/shield.png"),
+		"WPN":      rl.LoadTexture("assets/textures/battle/system/weapon.png"),
+		"layout":   rl.LoadTexture("assets/textures/battle/layout.png"),
+		"terminal": rl.LoadTexture("assets/textures/battle/terminal.png"),
 
-		"optionsM": rl.LoadTexture("assets/menus/main/optionsM.png"),
-		"titleM":   rl.LoadTexture("assets/menus/main/titleM.png"),
-
-		"back":       rl.LoadTexture("assets/misc/back.png"),
-		"background": rl.LoadTexture("assets/misc/background.png"),
+		"back":       rl.LoadTexture("assets/textures/main/back.png"),
+		"background": rl.LoadTexture("assets/textures/main/background.png"),
+		"options":    rl.LoadTexture("assets/textures/main/options.png"),
+		"title":      rl.LoadTexture("assets/textures/main/title.png"),
 	}
 
 	gameManager.SetScreen(game.NewMainMenuScreen())
