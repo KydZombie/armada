@@ -85,10 +85,10 @@ func NewGameScreen(gm *core.GameManager) *Game {
 	gs.windows = append(gs.windows, NewBattleWindow(
 		func(gm *core.GameManager) rl.Rectangle {
 			return rl.Rectangle{
-				X:      float32(gm.ScreenWidth)/2.0 + windowMargin + rightColumnInset,
-				Y:      float32(gm.ScreenHeight)/2.0 + windowMargin,
-				Width:  float32(gm.ScreenWidth)/2.0 - windowMargin*2 - rightColumnInset,
-				Height: float32(gm.ScreenHeight)/2.0 - windowMargin*2,
+				X:      float32(gm.NativeWidth)/2.0 + windowMargin + rightColumnInset,
+				Y:      float32(gm.NativeHeight)/2.0 + windowMargin,
+				Width:  float32(gm.NativeWidth)/2.0 - windowMargin*2 - rightColumnInset,
+				Height: float32(gm.NativeHeight)/2.0 - windowMargin*2,
 			}
 		},
 		gm,
@@ -96,12 +96,12 @@ func NewGameScreen(gm *core.GameManager) *Game {
 
 	gs.windows = append(gs.windows, NewTrainWindow(
 		func(gm *core.GameManager) rl.Rectangle {
-			missionWidth := (float32(gm.ScreenWidth)/2.0 - windowMargin*2 - rightColumnInset - missionExtraInset) * missionWidthScale
+			missionWidth := (float32(gm.NativeWidth)/2.0 - windowMargin*2 - rightColumnInset - missionExtraInset) * missionWidthScale
 			return rl.Rectangle{
 				X:      210,
 				Y:      10,
-				Width:  float32(gm.ScreenWidth) - windowMargin*2 - missionWidth - trainMissionGap,
-				Height: float32(gm.ScreenHeight)/2.0 - windowMargin,
+				Width:  float32(gm.NativeWidth) - windowMargin*2 - missionWidth - trainMissionGap,
+				Height: float32(gm.NativeHeight)/2.0 - windowMargin,
 			}
 		},
 		gm,

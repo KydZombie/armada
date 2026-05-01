@@ -193,7 +193,7 @@ func (t *TerminalWindow) DrawWindow(gm *core.GameManager, state *Game) {
 	if !t.IsVisible() {
 		return
 	}
-	const fontSize int32 = 18
+	const fontSize int32 = 22
 
 	const innerOffset int32 = 4
 

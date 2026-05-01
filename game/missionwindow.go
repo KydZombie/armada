@@ -19,7 +19,7 @@ func NewMissionWindow(sizeFunc func(gm *core.GameManager) rl.Rectangle, gm *core
 
 func (m MissionWindow) HandleInput(gm *core.GameManager, state *Game) bool {
 	if state.isMissionBriefingActive() {
-		mousePos := rl.GetMousePosition()
+		mousePos := gm.GetMouse()
 		if !rl.IsMouseButtonPressed(rl.MouseLeftButton) {
 			return false
 		}
@@ -33,7 +33,7 @@ func (m MissionWindow) HandleInput(gm *core.GameManager, state *Game) bool {
 	}
 
 	if state.isGameOverModalActive() {
-		mousePos := rl.GetMousePosition()
+		mousePos := gm.GetMouse()
 		if !rl.IsMouseButtonPressed(rl.MouseLeftButton) {
 			return false
 		}
@@ -112,7 +112,7 @@ func (m MissionWindow) DrawWindow(gm *core.GameManager, state *Game) {
 		bannerFill := rl.NewColor(18, 72, 36, 245)
 		bannerText = "LEVEL CLEARED"
 
-		bannerBounds := rl.Rectangle{X: content.X + 10, Y: missionBounds.Y + missionBounds.Height + 8, Width: content.Width - 20, Height: 48}
+		bannerBounds := rl.Rectangle{X: content.X + 10, Y: missionBounds.Y + missionBounds.Height - 65, Width: content.Width - 20, Height: 48}
 		drawPanelCard(bannerBounds, bannerFill, rl.Fade(bannerColor, 0.9))
 		drawFittedText(gm, bannerText, int32(bannerBounds.X+12), int32(bannerBounds.Y+11), bannerBounds.Width-24, missionLeadFontSize, missionLeadMinSize, bannerColor)
 	}
@@ -182,10 +182,10 @@ func drawMissionListSection(gm *core.GameManager, bounds rl.Rectangle, title str
 }
 
 func drawMissionBriefingModal(gm *core.GameManager) {
-	overlay := rl.Rectangle{X: 0, Y: 0, Width: float32(gm.ScreenWidth), Height: float32(gm.ScreenHeight)}
+	overlay := rl.Rectangle{X: 0, Y: 0, Width: float32(gm.NativeWidth), Height: float32(gm.NativeHeight)}
 	rl.DrawRectangleRec(overlay, rl.NewColor(4, 8, 16, 200))
 
-	panelWidth := float32(gm.ScreenWidth) * 0.52
+	panelWidth := float32(gm.NativeWidth) * 0.52
 	if panelWidth < 480 {
 		panelWidth = 480
 	}
@@ -194,8 +194,8 @@ func drawMissionBriefingModal(gm *core.GameManager) {
 	}
 	panelHeight := float32(250)
 	panelBounds := rl.Rectangle{
-		X:      float32(gm.ScreenWidth)/2 - panelWidth/2,
-		Y:      float32(gm.ScreenHeight)/2 - panelHeight/2,
+		X:      float32(gm.NativeWidth)/2 - panelWidth/2,
+		Y:      float32(gm.NativeHeight)/2 - panelHeight/2,
 		Width:  panelWidth,
 		Height: panelHeight,
 	}
@@ -238,7 +238,7 @@ func drawMissionBriefingModal(gm *core.GameManager) {
 
 	startRect := missionBriefingStartButtonRect(gm)
 	buttonColor := rl.DarkGray
-	if rl.CheckCollisionPointRec(rl.GetMousePosition(), startRect) {
+	if rl.CheckCollisionPointRec(gm.GetMouse(), startRect) {
 		buttonColor = rl.Gray
 	}
 	drawPanelCard(startRect, buttonColor, rl.DarkGray)
@@ -259,10 +259,10 @@ func drawMissionBriefingModal(gm *core.GameManager) {
 }
 
 func drawGameOverModal(gm *core.GameManager) {
-	overlay := rl.Rectangle{X: 0, Y: 0, Width: float32(gm.ScreenWidth), Height: float32(gm.ScreenHeight)}
+	overlay := rl.Rectangle{X: 0, Y: 0, Width: float32(gm.NativeWidth), Height: float32(gm.NativeHeight)}
 	rl.DrawRectangleRec(overlay, rl.NewColor(4, 8, 16, 200))
 
-	panelWidth := float32(gm.ScreenWidth) * 0.5
+	panelWidth := float32(gm.NativeWidth) * 0.5
 	if panelWidth < 460 {
 		panelWidth = 460
 	}
@@ -271,8 +271,8 @@ func drawGameOverModal(gm *core.GameManager) {
 	}
 	panelHeight := float32(200)
 	panelBounds := rl.Rectangle{
-		X:      float32(gm.ScreenWidth)/2 - panelWidth/2,
-		Y:      float32(gm.ScreenHeight)/2 - panelHeight/2,
+		X:      float32(gm.NativeWidth)/2 - panelWidth/2,
+		Y:      float32(gm.NativeHeight)/2 - panelHeight/2,
 		Width:  panelWidth,
 		Height: panelHeight,
 	}
@@ -296,7 +296,7 @@ func drawGameOverModal(gm *core.GameManager) {
 
 	retryRect := gameOverRetryButtonRect(gm)
 	menuRect := gameOverMenuButtonRect(gm)
-	mousePos := rl.GetMousePosition()
+	mousePos := gm.GetMouse()
 	retryHover := rl.CheckCollisionPointRec(mousePos, retryRect)
 	menuHover := rl.CheckCollisionPointRec(mousePos, menuRect)
 
@@ -346,8 +346,8 @@ func missionBriefingStartButtonRect(gm *core.GameManager) rl.Rectangle {
 	buttonWidth := float32(220)
 	buttonHeight := float32(58)
 	return rl.Rectangle{
-		X:      float32(gm.ScreenWidth)/2 - buttonWidth/2,
-		Y:      float32(gm.ScreenHeight)/2 + 56,
+		X:      float32(gm.NativeWidth)/2 - buttonWidth/2,
+		Y:      float32(gm.NativeHeight)/2 + 56,
 		Width:  buttonWidth,
 		Height: buttonHeight,
 	}
@@ -358,8 +358,8 @@ func gameOverRetryButtonRect(gm *core.GameManager) rl.Rectangle {
 	buttonHeight := float32(54)
 	gap := float32(18)
 	totalWidth := buttonWidth*2 + gap
-	x := float32(gm.ScreenWidth)/2 - totalWidth/2
-	y := float32(gm.ScreenHeight)/2 + 70
+	x := float32(gm.NativeWidth)/2 - totalWidth/2
+	y := float32(gm.NativeHeight)/2 + 70
 	return rl.Rectangle{X: x, Y: y, Width: buttonWidth, Height: buttonHeight}
 }
 
@@ -368,7 +368,7 @@ func gameOverMenuButtonRect(gm *core.GameManager) rl.Rectangle {
 	buttonHeight := float32(54)
 	gap := float32(18)
 	totalWidth := buttonWidth*2 + gap
-	x := float32(gm.ScreenWidth)/2 - totalWidth/2 + buttonWidth + gap
-	y := float32(gm.ScreenHeight)/2 + 70
+	x := float32(gm.NativeWidth)/2 - totalWidth/2 + buttonWidth + gap
+	y := float32(gm.NativeHeight)/2 + 70
 	return rl.Rectangle{X: x, Y: y, Width: buttonWidth, Height: buttonHeight}
 }

@@ -170,9 +170,8 @@ func (b BattleWindow) DrawWindow(gm *core.GameManager, state *Game) {
 	}
 
 	if state.Enemy == nil {
-		drawPanelCard(enemyPanel, battlePanelColor, rl.Fade(battleBorderColor, 0.85))
-		drawFittedText(gm, "No enemy in range", int32(enemyPanel.X+12), int32(enemyPanel.Y+16), enemyPanel.Width-24, 28, 16, rl.White)
-		drawFittedText(gm, "Complete mission goals to spawn the next hostile.", int32(enemyPanel.X+12), int32(enemyPanel.Y+50), enemyPanel.Width-24, 16, 11, rl.LightGray)
+		drawPanelCard(enemyPanel, battlePanelColor, rl.Black)
+		drawFittedText(gm, "No enemy in range", int32(enemyPanel.X+12), int32(enemyPanel.Y+110), enemyPanel.Width-24, 28, 16, rl.White)
 	} else {
 		enemySnapshot := combatantSnapshot{
 			Name:         state.Enemy.Name(),
@@ -195,19 +194,19 @@ func (b BattleWindow) DrawWindow(gm *core.GameManager, state *Game) {
 		rl.Color{R: 0, G: 0, B: 0, A: 0},
 	)
 	rl.DrawCircleGradient(
-		gm.ScreenWidth, 0,
+		gm.NativeWidth, 0,
 		500,
 		rl.Color{R: 0, G: 0, B: 0, A: 200},
 		rl.Color{R: 0, G: 0, B: 0, A: 0},
 	)
 	rl.DrawCircleGradient(
-		0, gm.ScreenHeight,
+		0, gm.NativeHeight,
 		500,
 		rl.Color{R: 0, G: 0, B: 0, A: 200},
 		rl.Color{R: 0, G: 0, B: 0, A: 0},
 	)
 	rl.DrawCircleGradient(
-		gm.ScreenWidth, gm.ScreenHeight,
+		gm.NativeWidth, gm.NativeHeight,
 		500,
 		rl.Color{R: 0, G: 0, B: 0, A: 200},
 		rl.Color{R: 0, G: 0, B: 0, A: 0},

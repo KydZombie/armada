@@ -12,6 +12,8 @@ func main() {
 		core.Config{
 			ScreenWidth:  1280,
 			ScreenHeight: 720,
+			NativeWidth:  1280,
+			NativeHeight: 720,
 			VSync:        false,
 			Resizeable:   false,
 			MasterVolume: 1.0,
@@ -32,6 +34,8 @@ func main() {
 		}
 		rl.CloseWindow()
 	}()
+
+	gameManager.Shader = rl.LoadShader("assets/shaders/scan.vert", "assets/shaders/scan.frag")
 
 	gameManager.Fonts = map[string]rl.Font{
 		"dh":   rl.LoadFontEx("assets/fonts/doublehomicide.ttf", 64, nil),

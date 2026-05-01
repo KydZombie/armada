@@ -28,7 +28,7 @@ func (t TrainWindow) HandleInput(gm *core.GameManager, state *Game) bool {
 		return false
 	}
 
-	mousePos := rl.GetMousePosition()
+	mousePos := gm.GetMouse()
 	if !rl.CheckCollisionPointRec(mousePos, t.GetBounds()) {
 		return false
 	}
@@ -67,22 +67,12 @@ func (t TrainWindow) UpdateWindow(gm *core.GameManager, state *Game) {
 func (t TrainWindow) trainOffset() rl.Vector2 {
 	bounds := t.GetBounds()
 	tile := t.tileSize()
-	widthTiles, heightTiles := trainLayoutWidthTiles, trainLayoutHeightTiles
-	layoutWidth := widthTiles * tile
-	layoutHeight := heightTiles * tile
 
-	topAreaY := bounds.Y + 34
-	topAreaHeight := bounds.Height - 150
+	layoutW := trainLayoutWidthTiles * tile
+	layoutH := trainLayoutHeightTiles * tile
 
-	x := bounds.X + (bounds.Width-layoutWidth)/2
-	if x < bounds.X+8 {
-		x = bounds.X + 8
-	}
-
-	y := topAreaY + (topAreaHeight-layoutHeight)/2
-	if y < bounds.Y+24 {
-		y = bounds.Y + 24
-	}
+	x := bounds.X + ((bounds.Width - layoutW) / 2) + 20
+	y := bounds.Y + ((bounds.Height - layoutH) / 2) - 40
 
 	return rl.Vector2{X: x, Y: y}
 }
@@ -97,11 +87,11 @@ func (t TrainWindow) tileSize() float32 {
 		heightTiles = 1
 	}
 
-	widthBudget := bounds.Width - 26
+	widthBudget := bounds.Width
 	tileByWidth := widthBudget / widthTiles
 
 	// Reserve room for panel framing, room bars, and the train status strip.
-	heightBudget := bounds.Height - 132
+	heightBudget := bounds.Height
 	tileByHeight := heightBudget / heightTiles
 
 	tile := tileByWidth
@@ -240,8 +230,6 @@ func (t TrainWindow) characterWorldPosition(state *Game, character *Character) r
 func (t TrainWindow) DrawWindow(gm *core.GameManager, state *Game) {
 	bounds := t.GetBounds()
 	rl.BeginScissorMode(int32(bounds.X), int32(bounds.Y), int32(bounds.Width), int32(bounds.Height))
-
-	rl.DrawTexture(gm.Textures["trainT"], 0, 0, rl.White)
 
 	// TODO: Use sprites for train rendering
 
