@@ -1,12 +1,10 @@
 package game
 
 import (
-	"fmt"
-
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
-func drawStatBar(bounds rl.Rectangle, label string, value int, maxValue int, fillColor rl.Color, textSize int32) {
+func drawStatBar(bounds rl.Rectangle, label string, value int, maxValue int, fillColor rl.Color, textSize int32, font rl.Font) {
 	if maxValue <= 0 {
 		maxValue = 1
 	}
@@ -33,10 +31,17 @@ func drawStatBar(bounds rl.Rectangle, label string, value int, maxValue int, fil
 
 	rl.DrawRectangleLinesEx(bounds, 2, rl.White)
 
-	labelText := fmt.Sprintf("%s: %d/%d", label, value, maxValue)
+	labelText := label
 	textSize = fitTextSize(labelText, bounds.Width-8, textSize, 10)
 	textWidth := rl.MeasureText(labelText, textSize)
 	textX := int32(bounds.X + (bounds.Width-float32(textWidth))/2)
 	textY := int32(bounds.Y + (bounds.Height-float32(textSize))/2)
-	rl.DrawText(labelText, textX, textY, textSize, rl.White)
+	rl.DrawTextEx(
+		font,
+		labelText,
+		rl.NewVector2(float32(textX), float32(textY)),
+		float32(textSize),
+		2,
+		rl.White,
+	)
 }

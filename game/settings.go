@@ -25,7 +25,7 @@ func NewSettingsScreen(currentScreen core.Screen) *SettingsScreen {
 func (s *SettingsScreen) ResizeScreen(gm *core.GameManager) {}
 
 func settingsPanelWidth(gm *core.GameManager) float32 {
-	width := float32(gm.ScreenWidth) * 0.5
+	width := float32(gm.NativeWidth) * 0.5
 	if width < 360 {
 		width = 360
 	}
@@ -36,7 +36,7 @@ func settingsPanelWidth(gm *core.GameManager) float32 {
 }
 
 func settingsRowGap(gm *core.GameManager) float32 {
-	gap := (float32(gm.ScreenHeight) - 240) / 6
+	gap := (float32(gm.NativeHeight) - 240) / 6
 	if gap < 64 {
 		gap = 64
 	}
@@ -48,9 +48,9 @@ func settingsRowGap(gm *core.GameManager) float32 {
 
 func settingsStartY(gm *core.GameManager, gap float32) float32 {
 	totalHeight := gap*5 - 110
-	centered := float32(gm.ScreenHeight)/2 - totalHeight/2
+	centered := float32(gm.NativeHeight)/2 - totalHeight/2
 	minY := float32(180)
-	maxY := float32(gm.ScreenHeight) - totalHeight - 72
+	maxY := float32(gm.NativeHeight) - totalHeight - 72
 
 	if maxY < minY {
 		return maxY
@@ -69,7 +69,7 @@ func (s *SettingsScreen) sliderRect(gm *core.GameManager, index int) rl.Rectangl
 	barHeight := float32(14)
 	rowGap := settingsRowGap(gm)
 	startY := settingsStartY(gm, rowGap)
-	startX := float32(gm.ScreenWidth)/2 - barWidth/2
+	startX := float32(gm.NativeWidth)/2 - barWidth/2
 
 	return rl.Rectangle{
 		X:      startX,
@@ -84,7 +84,7 @@ func (s *SettingsScreen) toggleRect(gm *core.GameManager, index int) rl.Rectangl
 	height := float32(46)
 	rowGap := settingsRowGap(gm)
 	startY := settingsStartY(gm, rowGap)
-	startX := float32(gm.ScreenWidth)/2 - barWidth/2
+	startX := float32(gm.NativeWidth)/2 - barWidth/2
 
 	return rl.Rectangle{
 		X:      startX,
@@ -203,7 +203,7 @@ func (s *SettingsScreen) UpdateScreen(gm *core.GameManager) {
 		return
 	}
 
-	mousePos := rl.GetMousePosition()
+	mousePos := gm.GetMouse()
 	for i := range volumeLabels {
 		sliderRect := s.sliderRect(gm, i)
 		hitRect := rl.Rectangle{
@@ -242,52 +242,26 @@ func (s *SettingsScreen) UpdateScreen(gm *core.GameManager) {
 	}
 
 	rect := rl.Rectangle{
-		X:      float32(gm.ScreenWidth)/2 - 170,
-		Y:      float32(gm.ScreenHeight) - 110,
+		X:      float32(gm.NativeWidth)/2 - 170,
+		Y:      float32(gm.NativeHeight) - 110,
 		Width:  340,
 		Height: 54,
 	}
-	if rl.CheckCollisionPointRec(rl.GetMousePosition(), rect) && rl.IsMouseButtonPressed(rl.MouseLeftButton) {
+	if rl.CheckCollisionPointRec(gm.GetMouse(), rect) && rl.IsMouseButtonPressed(rl.MouseLeftButton) {
 		gm.SetScreen(s.previousScreen)
 	}
 }
 
 func (s *SettingsScreen) DrawScreen(gm *core.GameManager) {
 	rl.DrawTexture(gm.Textures["background"], 0, 0, rl.Color{R: 120, G: 120, B: 120, A: 255})
-
 	rl.DrawTexture(gm.Textures["back"], 0, 0, rl.White)
-
-	rl.DrawCircleGradient(
-		0, 0,
-		500,
-		rl.Color{R: 0, G: 0, B: 0, A: 200},
-		rl.Color{R: 0, G: 0, B: 0, A: 0},
-	)
-	rl.DrawCircleGradient(
-		gm.ScreenWidth, 0,
-		500,
-		rl.Color{R: 0, G: 0, B: 0, A: 200},
-		rl.Color{R: 0, G: 0, B: 0, A: 0},
-	)
-	rl.DrawCircleGradient(
-		0, gm.ScreenHeight,
-		500,
-		rl.Color{R: 0, G: 0, B: 0, A: 200},
-		rl.Color{R: 0, G: 0, B: 0, A: 0},
-	)
-	rl.DrawCircleGradient(
-		gm.ScreenWidth, gm.ScreenHeight,
-		500,
-		rl.Color{R: 0, G: 0, B: 0, A: 200},
-		rl.Color{R: 0, G: 0, B: 0, A: 0},
-	)
 
 	title := "Settings"
 
 	sizeTitle := rl.MeasureTextEx(gm.Fonts["dh"], title, 100, 2)
 
 	posT := rl.Vector2{
-		X: float32(gm.ScreenWidth)/2 - sizeTitle.X/2,
+		X: float32(gm.NativeWidth)/2 - sizeTitle.X/2,
 		Y: 70,
 	}
 
@@ -383,13 +357,13 @@ func (s *SettingsScreen) DrawScreen(gm *core.GameManager) {
 	}
 
 	rect := rl.Rectangle{
-		X:      float32(gm.ScreenWidth)/2 - 175,
-		Y:      float32(gm.ScreenHeight) - 110,
+		X:      float32(gm.NativeWidth)/2 - 175,
+		Y:      float32(gm.NativeHeight) - 110,
 		Width:  350,
 		Height: 90,
 	}
 
-	hovered := rl.CheckCollisionPointRec(rl.GetMousePosition(), rect)
+	hovered := rl.CheckCollisionPointRec(gm.GetMouse(), rect)
 	textColor := rl.Black
 
 	if hovered {
@@ -411,4 +385,31 @@ func (s *SettingsScreen) DrawScreen(gm *core.GameManager) {
 		2,
 		textColor,
 	)
+
+	rl.DrawCircleGradient(
+		0, 0,
+		500,
+		rl.Color{R: 0, G: 0, B: 0, A: 200},
+		rl.Color{R: 0, G: 0, B: 0, A: 0},
+	)
+	rl.DrawCircleGradient(
+		gm.NativeWidth, 0,
+		500,
+		rl.Color{R: 0, G: 0, B: 0, A: 200},
+		rl.Color{R: 0, G: 0, B: 0, A: 0},
+	)
+	rl.DrawCircleGradient(
+		0, gm.NativeHeight,
+		500,
+		rl.Color{R: 0, G: 0, B: 0, A: 200},
+		rl.Color{R: 0, G: 0, B: 0, A: 0},
+	)
+	rl.DrawCircleGradient(
+		gm.NativeWidth, gm.NativeHeight,
+		500,
+		rl.Color{R: 0, G: 0, B: 0, A: 200},
+		rl.Color{R: 0, G: 0, B: 0, A: 0},
+	)
 }
+
+func (s *SettingsScreen) DrawScreenUI(gm *core.GameManager) {}

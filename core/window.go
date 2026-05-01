@@ -12,6 +12,7 @@ type Window[State any] interface {
 	HandleInput(gm *GameManager, state *State) bool
 	UpdateWindow(gm *GameManager, state *State)
 	DrawWindow(gm *GameManager, state *State)
+	DrawWindowUI(gm *GameManager, state *State)
 }
 
 type BaseWindow[State any] struct {

@@ -64,8 +64,8 @@ func (s *MainMenuScreen) menuOptionRect(gm *core.GameManager, index int) rl.Rect
 	buttonHeight := float32(95)
 	buttonSpacing := float32(12.5)
 	totalHeight := float32(len(s.options))*buttonHeight + float32(len(s.options)-1)*buttonSpacing
-	startY := float32(gm.ScreenHeight)/2 - totalHeight/2 + 137.5
-	x := float32(gm.ScreenWidth)/2 - buttonWidth/2
+	startY := float32(gm.NativeHeight)/2 - totalHeight/2 + 137.5
+	x := float32(gm.NativeWidth)/2 - buttonWidth/2
 	y := startY + float32(index)*(buttonHeight+buttonSpacing)
 
 	return rl.Rectangle{
@@ -91,7 +91,7 @@ func (s *MainMenuScreen) UpdateScreen(gm *core.GameManager) {
 		s.hovered = -1
 	}
 
-	mousePos := rl.GetMousePosition()
+	mousePos := gm.GetMouse()
 	s.hovered = -1
 	for i := range s.options {
 		if rl.CheckCollisionPointRec(mousePos, s.menuOptionRect(gm, i)) {
@@ -130,34 +130,7 @@ func (s *MainMenuScreen) activateSelected(gm *core.GameManager) {
 
 func (s *MainMenuScreen) DrawScreen(gm *core.GameManager) {
 	rl.DrawTexture(gm.Textures["background"], 0, 0, rl.Color{R: 120, G: 120, B: 120, A: 255})
-
 	rl.DrawTexture(gm.Textures["options"], 0, 0, rl.White)
-
-	rl.DrawCircleGradient(
-		0, 0,
-		500,
-		rl.Color{R: 0, G: 0, B: 0, A: 200},
-		rl.Color{R: 0, G: 0, B: 0, A: 0},
-	)
-	rl.DrawCircleGradient(
-		gm.ScreenWidth, 0,
-		500,
-		rl.Color{R: 0, G: 0, B: 0, A: 200},
-		rl.Color{R: 0, G: 0, B: 0, A: 0},
-	)
-	rl.DrawCircleGradient(
-		0, gm.ScreenHeight,
-		500,
-		rl.Color{R: 0, G: 0, B: 0, A: 200},
-		rl.Color{R: 0, G: 0, B: 0, A: 0},
-	)
-	rl.DrawCircleGradient(
-		gm.ScreenWidth, gm.ScreenHeight,
-		500,
-		rl.Color{R: 0, G: 0, B: 0, A: 200},
-		rl.Color{R: 0, G: 0, B: 0, A: 0},
-	)
-
 	rl.DrawTexture(gm.Textures["title"], 0, 0, rl.White)
 
 	for i, option := range s.options {
@@ -194,4 +167,31 @@ func (s *MainMenuScreen) DrawScreen(gm *core.GameManager) {
 			textColor,
 		)
 	}
+
+	rl.DrawCircleGradient(
+		0, 0,
+		500,
+		rl.Color{R: 0, G: 0, B: 0, A: 200},
+		rl.Color{R: 0, G: 0, B: 0, A: 0},
+	)
+	rl.DrawCircleGradient(
+		gm.NativeWidth, 0,
+		500,
+		rl.Color{R: 0, G: 0, B: 0, A: 200},
+		rl.Color{R: 0, G: 0, B: 0, A: 0},
+	)
+	rl.DrawCircleGradient(
+		0, gm.NativeHeight,
+		500,
+		rl.Color{R: 0, G: 0, B: 0, A: 200},
+		rl.Color{R: 0, G: 0, B: 0, A: 0},
+	)
+	rl.DrawCircleGradient(
+		gm.NativeWidth, gm.NativeHeight,
+		500,
+		rl.Color{R: 0, G: 0, B: 0, A: 200},
+		rl.Color{R: 0, G: 0, B: 0, A: 0},
+	)
 }
+
+func (s *MainMenuScreen) DrawScreenUI(gm *core.GameManager) {}

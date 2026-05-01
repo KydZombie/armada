@@ -12,6 +12,8 @@ func main() {
 		core.Config{
 			ScreenWidth:  1280,
 			ScreenHeight: 720,
+			NativeWidth:  1280,
+			NativeHeight: 720,
 			VSync:        false,
 			Resizeable:   false,
 			MasterVolume: 1.0,
@@ -33,11 +35,13 @@ func main() {
 		rl.CloseWindow()
 	}()
 
+	gameManager.Shader = rl.LoadShader("assets/shaders/scan.vert", "assets/shaders/scan.frag")
+
 	gameManager.Fonts = map[string]rl.Font{
-		"dh":   rl.LoadFont("assets/fonts/doublehomicide.ttf"),
-		"ec_b": rl.LoadFont("assets/fonts/entercommand-b.ttf"),
-		"ec_i": rl.LoadFont("assets/fonts/entercommand-i.ttf"),
-		"ec":   rl.LoadFont("assets/fonts/entercommand.ttf"),
+		"dh":   rl.LoadFontEx("assets/fonts/doublehomicide.ttf", 64, nil),
+		"ec-b": rl.LoadFontEx("assets/fonts/entercommand-b.ttf", 64, nil),
+		"ec-i": rl.LoadFontEx("assets/fonts/entercommand-i.ttf", 64, nil),
+		"ec":   rl.LoadFontEx("assets/fonts/entercommand.ttf", 64, nil),
 	}
 
 	gameManager.Textures = map[string]rl.Texture2D{
@@ -47,8 +51,12 @@ func main() {
 		"PIL":      rl.LoadTexture("assets/textures/battle/system/pilot.png"),
 		"SHD":      rl.LoadTexture("assets/textures/battle/system/shield.png"),
 		"WPN":      rl.LoadTexture("assets/textures/battle/system/weapon.png"),
+		"enemyB":   rl.LoadTexture("assets/textures/battle/enemyB.png"),
+		"enemyF":   rl.LoadTexture("assets/textures/battle/enemyF.png"),
 		"layout":   rl.LoadTexture("assets/textures/battle/layout.png"),
 		"terminal": rl.LoadTexture("assets/textures/battle/terminal.png"),
+		"trainS":   rl.LoadTexture("assets/textures/battle/trainS.png"),
+		"trainT":   rl.LoadTexture("assets/textures/battle/trainT.png"),
 
 		"back":       rl.LoadTexture("assets/textures/main/back.png"),
 		"background": rl.LoadTexture("assets/textures/main/background.png"),

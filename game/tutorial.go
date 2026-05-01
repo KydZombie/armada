@@ -24,12 +24,12 @@ func (s *TutorialScreen) UpdateScreen(gm *core.GameManager) {
 	}
 
 	rect := rl.Rectangle{
-		X:      float32(gm.ScreenWidth)/2 - 175,
-		Y:      float32(gm.ScreenHeight) - 110,
+		X:      float32(gm.NativeWidth)/2 - 175,
+		Y:      float32(gm.NativeHeight) - 110,
 		Width:  350,
 		Height: 90,
 	}
-	if rl.CheckCollisionPointRec(rl.GetMousePosition(), rect) && rl.IsMouseButtonPressed(rl.MouseLeftButton) {
+	if rl.CheckCollisionPointRec(gm.GetMouse(), rect) && rl.IsMouseButtonPressed(rl.MouseLeftButton) {
 		gm.SetScreen(s.previousScreen)
 	}
 }
@@ -39,37 +39,12 @@ func (s *TutorialScreen) DrawScreen(gm *core.GameManager) {
 
 	rl.DrawTexture(gm.Textures["back"], 0, 0, rl.White)
 
-	rl.DrawCircleGradient(
-		0, 0,
-		500,
-		rl.Color{R: 0, G: 0, B: 0, A: 200},
-		rl.Color{R: 0, G: 0, B: 0, A: 0},
-	)
-	rl.DrawCircleGradient(
-		gm.ScreenWidth, 0,
-		500,
-		rl.Color{R: 0, G: 0, B: 0, A: 200},
-		rl.Color{R: 0, G: 0, B: 0, A: 0},
-	)
-	rl.DrawCircleGradient(
-		0, gm.ScreenHeight,
-		500,
-		rl.Color{R: 0, G: 0, B: 0, A: 200},
-		rl.Color{R: 0, G: 0, B: 0, A: 0},
-	)
-	rl.DrawCircleGradient(
-		gm.ScreenWidth, gm.ScreenHeight,
-		500,
-		rl.Color{R: 0, G: 0, B: 0, A: 200},
-		rl.Color{R: 0, G: 0, B: 0, A: 0},
-	)
-
 	title := "Tutorial"
 
 	sizeTitle := rl.MeasureTextEx(gm.Fonts["dh"], title, 100, 2)
 
 	pos := rl.Vector2{
-		X: float32(gm.ScreenWidth)/2 - sizeTitle.X/2,
+		X: float32(gm.NativeWidth)/2 - sizeTitle.X/2,
 		Y: 70,
 	}
 
@@ -107,13 +82,13 @@ func (s *TutorialScreen) DrawScreen(gm *core.GameManager) {
 	}
 
 	rect := rl.Rectangle{
-		X:      float32(gm.ScreenWidth)/2 - 175,
-		Y:      float32(gm.ScreenHeight) - 110,
+		X:      float32(gm.NativeWidth)/2 - 175,
+		Y:      float32(gm.NativeHeight) - 110,
 		Width:  350,
 		Height: 90,
 	}
 
-	hovered := rl.CheckCollisionPointRec(rl.GetMousePosition(), rect)
+	hovered := rl.CheckCollisionPointRec(gm.GetMouse(), rect)
 	textColor := rl.Black
 
 	if hovered {
@@ -135,4 +110,31 @@ func (s *TutorialScreen) DrawScreen(gm *core.GameManager) {
 		2,
 		textColor,
 	)
+
+	rl.DrawCircleGradient(
+		0, 0,
+		500,
+		rl.Color{R: 0, G: 0, B: 0, A: 200},
+		rl.Color{R: 0, G: 0, B: 0, A: 0},
+	)
+	rl.DrawCircleGradient(
+		gm.NativeWidth, 0,
+		500,
+		rl.Color{R: 0, G: 0, B: 0, A: 200},
+		rl.Color{R: 0, G: 0, B: 0, A: 0},
+	)
+	rl.DrawCircleGradient(
+		0, gm.NativeHeight,
+		500,
+		rl.Color{R: 0, G: 0, B: 0, A: 200},
+		rl.Color{R: 0, G: 0, B: 0, A: 0},
+	)
+	rl.DrawCircleGradient(
+		gm.NativeWidth, gm.NativeHeight,
+		500,
+		rl.Color{R: 0, G: 0, B: 0, A: 200},
+		rl.Color{R: 0, G: 0, B: 0, A: 0},
+	)
 }
+
+func (s *TutorialScreen) DrawScreenUI(gm *core.GameManager) {}

@@ -193,7 +193,7 @@ func (t *TerminalWindow) DrawWindow(gm *core.GameManager, state *Game) {
 	if !t.IsVisible() {
 		return
 	}
-	const fontSize int32 = 18
+	const fontSize int32 = 22
 
 	const innerOffset int32 = 4
 
@@ -207,7 +207,14 @@ func (t *TerminalWindow) DrawWindow(gm *core.GameManager, state *Game) {
 
 	inputLines := wrapTerminalLine(fmt.Sprint("> ", t.inputText.String()), contentWidth, fontSize)
 	for i, line := range inputLines {
-		rl.DrawText(line, offsetX, offsetY+int32(i)*fontSize, fontSize, rl.White)
+		rl.DrawTextEx(
+			gm.Fonts["ec"],
+			line,
+			rl.NewVector2(float32(offsetX), float32(offsetY+int32(i)*fontSize)),
+			float32(fontSize),
+			2,
+			rl.White,
+		)
 	}
 
 	maxVisibleHeight := int32(bounds.Height) - innerOffset
@@ -229,10 +236,21 @@ func (t *TerminalWindow) DrawWindow(gm *core.GameManager, state *Game) {
 			if nextY+fontSize > maxVisibleHeight+int32(bounds.Y) {
 				break
 			}
-			rl.DrawText(line, offsetX, nextY, fontSize, color)
+			rl.DrawTextEx(
+				gm.Fonts["ec"],
+				line,
+				rl.NewVector2(float32(offsetX), float32(nextY)),
+				float32(fontSize),
+				2,
+				color,
+			)
 			nextY += fontSize
 		}
 	}
 
 	rl.EndScissorMode()
+}
+
+func (t *TerminalWindow) DrawWindowUI(gm *core.GameManager, state *Game) {
+
 }
