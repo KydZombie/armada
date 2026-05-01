@@ -9,7 +9,7 @@ Go 1.26.1
 # Run
 
 - Clone repo
-- 'go run .' to run
+- `go run .` to run
 
 # Assets
 - Fonts used:
