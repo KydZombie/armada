@@ -9,6 +9,7 @@ Go 1.26.1
 # Run
 
 - Clone repo
+- `cd armada`
 - `go run .` to run
 
 # Assets
