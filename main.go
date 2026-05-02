@@ -25,7 +25,9 @@ func main() {
 	)
 
 	gameManager.CreateRaylibWindow()
+	gameManager.InitBackgroundMusic("assets/music/I_Do_Know_by_Memoraphile_CC0.mp3")
 	defer func() {
+		gameManager.CloseAudio()
 		for _, font := range gameManager.Fonts {
 			rl.UnloadFont(font)
 		}

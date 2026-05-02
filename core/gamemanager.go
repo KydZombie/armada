@@ -28,6 +28,9 @@ type GameManager struct {
 
 	Fonts    map[string]rl.Font
 	Textures map[string]rl.Texture2D
+
+	BackgroundMusic       rl.Music
+	backgroundMusicLoaded bool
 }
 
 func NewGameManager(windowTitle string, config Config) *GameManager {
@@ -62,6 +65,43 @@ func (gm *GameManager) CreateRaylibWindow() {
 		gm.ScreenWidth = int32(rl.GetScreenWidth())
 		gm.ScreenHeight = int32(rl.GetScreenHeight())
 	}
+}
+
+func (gm *GameManager) InitBackgroundMusic(path string) {
+	rl.InitAudioDevice()
+
+	gm.BackgroundMusic = rl.LoadMusicStream(path)
+	if !rl.IsMusicValid(gm.BackgroundMusic) {
+		gm.ErrLog.Printf("failed to load background music: %s", path)
+		return
+	}
+
+	gm.backgroundMusicLoaded = true
+	gm.BackgroundMusic.Looping = true
+	rl.SetMusicVolume(gm.BackgroundMusic, gm.GetEffectiveMusicVolume())
+	rl.PlayMusicStream(gm.BackgroundMusic)
+}
+
+func (gm *GameManager) UpdateAudio() {
+	if !gm.backgroundMusicLoaded {
+		return
+	}
+
+	rl.UpdateMusicStream(gm.BackgroundMusic)
+	rl.SetMusicVolume(gm.BackgroundMusic, gm.GetEffectiveMusicVolume())
+
+	if !rl.IsMusicStreamPlaying(gm.BackgroundMusic) {
+		rl.PlayMusicStream(gm.BackgroundMusic)
+	}
+}
+
+func (gm *GameManager) CloseAudio() {
+	if gm.backgroundMusicLoaded {
+		rl.StopMusicStream(gm.BackgroundMusic)
+		rl.UnloadMusicStream(gm.BackgroundMusic)
+	}
+
+	rl.CloseAudioDevice()
 }
 
 func (gm *GameManager) SetVSync(enabled bool) {
@@ -121,6 +161,7 @@ func (gm *GameManager) GetMouse() rl.Vector2 {
 
 func (gm *GameManager) RunFrame() {
 	gm.DeltaTime = rl.GetFrameTime()
+	gm.UpdateAudio()
 
 	if rl.IsKeyPressed(rl.KeyF3) {
 		gm.Debug = !gm.Debug
